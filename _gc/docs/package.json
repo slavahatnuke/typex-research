@@ -5,11 +5,11 @@
   "private": true,
   "scripts": {
     "dev": "echo ok",
-    "dev.1": "next dev --turbopack --port 3011",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint --max-warnings 0",
-    "check-types": "tsc --noEmit"
+    "dev.1": "node_modules/.bin/next dev --turbopack --port 3011",
+    "build": "node_modules/.bin/next build",
+    "start": "node_modules/.bin/next start",
+    "lint": "node_modules/.bin/next lint --max-warnings 0",
+    "check-types": "node_modules/.bin/tsc --noEmit"
   },
   "dependencies": {
     "@repo/ui": "*",
