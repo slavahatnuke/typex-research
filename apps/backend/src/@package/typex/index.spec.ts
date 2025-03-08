@@ -1,14 +1,14 @@
 // LOCAL
 // types testing
-import { ICommand, IEvent, IModel, IQuery, IService, Service } from './index';
-import { describe, it, expect } from 'vitest';
+import { ICommand, IEvent, IModel, IQuery, Service } from './index';
+import { describe, expect, it } from 'vitest';
 
-type IEventUserCreated = IEvent<{ type: 'UserCreated'; userId: string }>;
+type IUserCreated = IEvent<{ type: 'UserCreated'; userId: string }>;
 
 type ICreateUser = ICommand<
   { type: 'CreateUser'; email: string; name: string },
-  IEventUserCreated,
-  IEventUserCreated
+  IUserCreated,
+  IUserCreated
 >;
 
 type IUserReadModel = IModel<{
@@ -22,36 +22,43 @@ type IGetUser = IQuery<{ type: 'GetUser'; userId: string }, IUserReadModel>;
 
 type IUserActions = ICreateUser | IGetUser;
 
-async function test() {
-  const userApi = Service<IUserActions>({});
-
-  const userCreated = await userApi('CreateUser', {
-    email: 'email',
-    name: 'name',
-  });
-
-  console.log(userCreated.userId);
-
-  const user = await userApi('GetUser', { userId: userCreated.userId });
-
-  console.log(user.email);
-}
-
-type IUserService = IService<IUserActions>;
-
 describe(Service.name, () => {
   it('Service', async () => {
-    const userApi = Service<IUserActions>({});
+    const userApi = Service<IUserActions>({
+      CreateUser: async (input, context) => {
+        const event: IUserCreated = {
+          type: 'UserCreated',
+          userId: 'userId123',
+        };
+        return event;
+      },
+      GetUser: async (input, context) => {
+        return {
+          type: 'User',
+          id: input.userId,
+          email: 'email',
+          name: 'name',
+        };
+      },
+    });
 
     const userCreated = await userApi('CreateUser', {
       email: 'email',
       name: 'name',
     });
 
-    console.log(userCreated.userId);
+    expect(userCreated).toEqual({
+      type: 'UserCreated',
+      userId: 'userId123',
+    });
 
     const user = await userApi('GetUser', { userId: userCreated.userId });
 
-    console.log(user.email);
+    expect(user).toEqual({
+      type: 'User',
+      email: 'email',
+      id: 'userId123',
+      name: 'name',
+    });
   });
 });

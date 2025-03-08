@@ -124,13 +124,20 @@ export function NewError<Type extends IType>(
   class _Error extends Error {
     readonly type: Type['type'] = type;
 
-    constructor(payload: IOptional<IGiveErrorPayload<Type>, 'type'>) {
+    readonly origin?: Error;
+
+    constructor(
+      payload: IOptional<IGiveErrorPayload<Type>, 'type'>,
+      origin?: Error,
+    ) {
       super(type);
       Object.assign(this, payload);
+      this.origin = origin;
     }
   }
 
-  return (payload) => new _Error(payload) as IError<Type>;
+  return (payload, origin?: Error) =>
+    new _Error(payload, origin) as IError<Type>;
 }
 
 type IGiveErrorPayload<
@@ -191,7 +198,12 @@ type IServiceOutput<
 export type IServiceFunctions<
   ApiSpecification extends IType,
   Context extends IType | void = void,
-> = {};
+> = {
+  [Type in ApiSpecification['type']]: (
+    input: IGiveRequestInput<ApiSpecification, Type>,
+    context: Context,
+  ) => Promise<IServiceOutput<ApiSpecification, Type>>;
+};
 
 export function Service<
   ApiSpecification extends IType,
@@ -204,7 +216,7 @@ export function Service<
     const fn = functions[type];
     if (fn) {
       // @ts-ignore
-      return await fn(input, context);
+      return await fn({ ...input, type }, context);
     } else {
       throw ServiceFunctionNotFound({
         functionName: type,
