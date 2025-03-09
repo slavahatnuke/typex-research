@@ -1,6 +1,13 @@
-// LOCAL
-// types testing
-import { EmitServiceEvent, ICommand, IEvent, IGetServiceEvents, IModel, IQuery, Service, ServiceCall } from './index';
+import {
+  EmitServiceEvent,
+  ICommand,
+  IEvent,
+  IGetServiceEvents,
+  IModel,
+  IQuery,
+  Service,
+  ServiceCall,
+} from './index';
 import { describe, expect, it } from 'vitest';
 import { Collect } from '../testing/collect';
 
