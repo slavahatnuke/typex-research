@@ -12,7 +12,7 @@ export type IUseType<
 
 type IOptional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 type IRequire<T, K extends keyof T> = Omit<Partial<T>, K> & Pick<T, K>;
-export type IValueOfRecord<R extends Record<any, any>> = R[keyof R];
+type IGetRecordValues<R extends Record<any, any>> = R[keyof R];
 
 // meta
 const _meta = Symbol('_meta');
@@ -36,6 +36,7 @@ enum Action {
   Error = 'Error',
 }
 
+// payloads
 enum Payload {
   Request = 'Request',
   Response = 'Response',
@@ -63,7 +64,16 @@ type IEventsPayload<Events extends IType | void = void> = IType<{
 type IActionType<Type extends Action> = IType<{
   type: Type;
 }>;
+type IEventPayload<Payload extends IType> = IType<{
+  type: Payload.EventPayload;
+  payload: Payload;
+}>;
+type IErrorPayload<Type extends IType> = {
+  type: Payload.ErrorPayload;
+  payload: Type;
+};
 
+// actions
 export type ICommand<
   Request extends IType,
   Response extends IType | void = void,
@@ -83,11 +93,6 @@ export type IQuery<Request extends IType, Response extends IType> = IMetaType<
   | IResponsePayload<Response>
 >;
 
-type IEventPayload<Payload extends IType> = IType<{
-  type: Payload.EventPayload;
-  payload: Payload;
-}>;
-
 export type IEvent<
   Payload extends IType,
   Events extends IType | void = void,
@@ -96,10 +101,6 @@ export type IEvent<
   IActionType<Action.Event> | IEventPayload<Payload> | IEventsPayload<Events>
 >;
 
-type IErrorPayload<Type extends IType> = {
-  type: Payload.ErrorPayload;
-  payload: Type;
-};
 type IErrorAction = {
   type: Action.Error;
 };
@@ -173,6 +174,16 @@ export type IService<
   context: Context,
 ) => Promise<IServiceOutput<ApiSpecification, InputType>>;
 
+export type IServiceFunctions<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+> = {
+  [Type in ApiSpecification['type']]: (
+    input: IGiveRequestInput<ApiSpecification, Type>,
+    context: Context,
+  ) => Promise<IServiceOutput<ApiSpecification, Type>>;
+};
+
 export type IGiveRequestPayload<
   Input extends IType,
   X extends IUseType<IGetMeta<Input>, Payload.Request> = IUseType<
@@ -209,81 +220,6 @@ type IServiceOutput<
   InputType extends ApiSpecification['type'],
 > = IGiveRequestOutput<ApiSpecification, InputType>;
 
-export type IServiceFunctions<
-  ApiSpecification extends IType,
-  Context extends IType | void = void,
-> = {
-  [Type in ApiSpecification['type']]: (
-    input: IGiveRequestInput<ApiSpecification, Type>,
-    context: Context,
-  ) => Promise<IServiceOutput<ApiSpecification, Type>>;
-};
-
-type IBase = ICommand<any> | IQuery<any, any> | IEvent<any>;
-
-export type IEmitServiceEvent<
-  Events extends IType,
-  Context extends IType | void = void,
-> = <EventType extends Events['type']>(
-  base: IBase,
-  eventType: EventType,
-  event: IOptional<IUseType<IMetaFree<Events>, EventType>, 'type'>,
-  context?: Context,
-) => Promise<IUseType<IMetaFree<Events>, EventType>>;
-
-export function EmitServiceEvent<
-  Events extends IType,
-  Context extends IType | void = void,
->(): IEmitServiceEvent<Events, Context> {
-  return async (base, eventType, event, context) => {
-    // @ts-ignore
-    const emitter = base[_emitter];
-
-    if (emitter) {
-      // @ts-ignore
-      return await emitter(base, eventType, event, context);
-    } else {
-      throw ServiceEventEmitterNotFound({
-        base,
-        event,
-        context,
-      });
-    }
-  };
-}
-
-export type IServiceCall<
-  ApiSpecification extends IType,
-  Context extends IType | void = void,
-> = <InputType extends ApiSpecification['type']>(
-  base: IBase,
-  inputType: InputType,
-  input: IServiceInput<ApiSpecification, InputType>,
-  context?: Context,
-) => Promise<IServiceOutput<ApiSpecification, InputType>>;
-
-export function ServiceCall<
-  ApiSpecification extends IType,
-  Context extends IType | void = void,
->(): IServiceCall<ApiSpecification, Context> {
-  return async (base, inputType, input, context) => {
-    // @ts-ignore
-    const caller = base[_caller];
-
-    if (caller) {
-      // @ts-ignore
-      return await caller(inputType, input, context);
-    } else {
-      throw ServiceCallerNotFound({
-        base,
-        inputType,
-        input,
-        context,
-      });
-    }
-  };
-}
-
 const _emitter = Symbol('_emitter');
 const _caller = Symbol('_caller');
 
@@ -292,18 +228,22 @@ type IGiveEventsPayloadOfAction<Action extends IType> = IUseType<
   Payload.Events
 >;
 
-type IGetActionEvents<Action extends IType> =
+type IGetEventsFromAction<Action extends IType> =
   IGiveEventsPayloadOfAction<Action> extends IEventsPayload<IType>
     ? IGiveEventsPayloadOfAction<Action>['events']
     : never;
 
-export type IGetServiceEvents<ApiSpecification extends IType> = IValueOfRecord<
-  Readonly<{
-    [Type in ApiSpecification['type']]: IGetActionEvents<
-      IUseType<ApiSpecification, Type>
-    >;
-  }>
->;
+type IGetServiceEventsFromActions<ApiSpecification extends IType> =
+  IGetRecordValues<
+    Readonly<{
+      [Type in ApiSpecification['type']]: IGetEventsFromAction<
+        IUseType<ApiSpecification, Type>
+      >;
+    }>
+  >;
+
+export type IGetServiceEvents<ApiSpecification extends IType> =
+  IGetServiceEventsFromActions<ApiSpecification>;
 
 export type IServiceEventsOutput<
   ApiSpecification extends IType,
@@ -374,8 +314,73 @@ export function Service<
   };
 }
 
-export function emit() {}
+// service tools
+type IBase = ICommand<any> | IQuery<any, any> | IEvent<any>;
 
+export type IEmitServiceEvent<
+  Events extends IType,
+  Context extends IType | void = void,
+> = <EventType extends Events['type']>(
+  base: IBase,
+  eventType: EventType,
+  event: IOptional<IUseType<IMetaFree<Events>, EventType>, 'type'>,
+  context?: Context,
+) => Promise<IUseType<IMetaFree<Events>, EventType>>;
+
+export function EmitServiceEvent<
+  Events extends IType,
+  Context extends IType | void = void,
+>(): IEmitServiceEvent<Events, Context> {
+  return async (base, eventType, event, context) => {
+    // @ts-ignore
+    const emitter = base[_emitter];
+
+    if (emitter) {
+      // @ts-ignore
+      return await emitter(base, eventType, event, context);
+    } else {
+      throw ServiceEventEmitterNotFound({
+        base,
+        event,
+        context,
+      });
+    }
+  };
+}
+
+export type IServiceCall<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+> = <InputType extends ApiSpecification['type']>(
+  base: IBase,
+  inputType: InputType,
+  input: IServiceInput<ApiSpecification, InputType>,
+  context?: Context,
+) => Promise<IServiceOutput<ApiSpecification, InputType>>;
+
+export function ServiceCall<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+>(): IServiceCall<ApiSpecification, Context> {
+  return async (base, inputType, input, context) => {
+    // @ts-ignore
+    const caller = base[_caller];
+
+    if (caller) {
+      // @ts-ignore
+      return await caller(inputType, input, context);
+    } else {
+      throw ServiceCallerNotFound({
+        base,
+        inputType,
+        input,
+        context,
+      });
+    }
+  };
+}
+
+// service errors
 export enum ServiceError {
   ServiceFunctionNotFound = 'ServiceFunctionNotFound',
   ServiceCallerNotFound = 'ServiceCallerNotFound',

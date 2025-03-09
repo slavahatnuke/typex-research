@@ -24,7 +24,7 @@ type IGetUser = IQuery<{ type: 'GetUser'; userId: string }, IUserReadModel>;
 type IUserActions = ICreateUser | IGetUser;
 type IUserEvents = IGetServiceEvents<IUserActions>;
 
-const x: IUserEvents = {
+const GetServiceEventsTypeTest1: IUserEvents = {
   type: 'UserCreated',
   userId: 'user123',
 };
