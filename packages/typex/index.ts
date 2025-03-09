@@ -301,13 +301,16 @@ export function Service<
               // @ts-ignore
               _input[_emitter] && delete input[_emitter];
 
+              const _event = { ...event, type: eventType };
+
               await _events(
                 // @ts-ignore
-                { ...event, type: eventType },
+                _event,
                 _context ?? context,
                 input,
               );
-              return event;
+
+              return _event;
             }) as IEmitServiceEvent<IType, Context>;
           },
 
