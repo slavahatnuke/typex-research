@@ -10,6 +10,7 @@ import {
   Service,
   ServiceCall,
   ServiceFunctions,
+  SubscribeService,
 } from './index';
 import { describe, expect, it } from 'vitest';
 import { Collect } from '@repo/testing/collect';
@@ -79,17 +80,18 @@ describe(Service.name, () => {
     const events = Collect<IServiceEvent<any>>();
 
     // api
-    const api = Service<IUserActions>({
+    const service = Service<IUserActions>({
       ...UserFunctions(),
     });
 
-    const un = api.subscribe(async (evt) => events(evt));
+    const subscribe = SubscribeService(service);
+    const un = subscribe(async (evt) => events(evt));
 
     // check that no events are emitted
     expect(events()).toEqual([]);
 
     // create a user
-    const userCreated = await api('CreateUser', {
+    const userCreated = await service('CreateUser', {
       email: 'email',
       name: 'name',
     });
@@ -99,7 +101,7 @@ describe(Service.name, () => {
     });
 
     // get the user
-    const user = await api('GetUser', { userId: userCreated.userId });
+    const user = await service('GetUser', { userId: userCreated.userId });
     expect(user).toEqual({
       type: 'User',
       email: 'email',

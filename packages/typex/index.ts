@@ -167,6 +167,8 @@ type IGiveErrorPayload<
 
 // service
 
+const _subscribe = Symbol('_subscribe');
+
 export type IService<
   ApiSpecification extends IType,
   Context extends IType | void = void,
@@ -177,10 +179,24 @@ export type IService<
   context: Context,
 ) => Promise<IServiceOutput<ApiSpecification, InputType>>) &
   Readonly<{
-    subscribe: IBus<
-      IServiceEvent<ApiSpecification, Events, Context>
-    >['subscribe'];
+    [_subscribe]: ISubscribeService<ApiSpecification, Context, Events>;
   }>;
+
+export type ISubscribeService<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
+> = IBus<IServiceEvent<ApiSpecification, Events, Context>>['subscribe'];
+
+export function SubscribeService<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
+>(
+  service: IService<ApiSpecification, Context, Events>,
+): ISubscribeService<ApiSpecification, Context, Events> {
+  return service[_subscribe];
+}
 
 export type IServiceFunctions<
   ApiSpecification extends IType,
@@ -333,7 +349,7 @@ export function Service<
   }) as IService<ApiSpecification, Context, Events>;
 
   // define subscribe
-  (service as any).subscribe = subscribe;
+  (service as any)[_subscribe] = subscribe;
 
   return service;
 }

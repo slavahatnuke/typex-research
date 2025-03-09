@@ -1,4 +1,11 @@
-import { IService, IType, NewError } from './index';
+import {
+  IEvent,
+  InMemoryBus,
+  IService,
+  IServiceEvent,
+  IType,
+  NewError,
+} from './index';
 
 enum ServiceAsFetchError {
   FetchResponseNotOk = 'FetchResponseNotOk',
@@ -22,7 +29,10 @@ export function ServiceAsFetch<
   ApiSpecification extends IType = IType,
   Context extends IType | void = void,
 >(url: string): IService<ApiSpecification, Context> {
-  return async (type, input, context) => {
+  const { publish, subscribe } =
+    InMemoryBus<IServiceEvent<ApiSpecification, IEvent<any>, Context>>();
+
+  const service = (async (type, input, context) => {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -49,5 +59,10 @@ export function ServiceAsFetch<
         response: await response.text(),
       });
     }
-  };
+  }) as IService<ApiSpecification, Context>;
+
+  // define subscribe
+  (service as any).subscribe = subscribe;
+
+  return service;
 }
