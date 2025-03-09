@@ -1,8 +1,32 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
 function App() {
+
+  useEffect(
+    () => {
+      async function app() {
+        // send post
+        const response = await fetch('http://localhost:4000', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'Hello',
+          }),
+        });
+
+        console.log(await response.json());
+      }
+
+      app()
+        .catch((error) => console.error(error));
+
+    },
+    []
+  )
   return (
     <div className="App">
       <header className="App-header">
