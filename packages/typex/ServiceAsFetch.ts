@@ -2,6 +2,7 @@ import { IService, IType, NewError } from './index';
 
 enum ServiceAsFetchError {
   FetchResponseNotOk = 'FetchResponseNotOk',
+  OutputTypeNotOk = 'OutputTypeNotOk',
 }
 
 export const FetchResponseNotOk = NewError<{
@@ -10,6 +11,12 @@ export const FetchResponseNotOk = NewError<{
   response: any;
   status: number;
 }>(ServiceAsFetchError.FetchResponseNotOk);
+
+export const OutputTypeNotOk = NewError<{
+  type: ServiceAsFetchError.OutputTypeNotOk;
+  request: any;
+  output: any;
+}>(ServiceAsFetchError.OutputTypeNotOk);
 
 export function ServiceAsFetch<
   ApiSpecification extends IType = IType,
@@ -25,7 +32,16 @@ export function ServiceAsFetch<
     });
 
     if (response.ok) {
-      return await response.json();
+      const output = await response.json();
+
+      if ('type' in output && typeof output.type === 'string') {
+        return output;
+      } else {
+        throw OutputTypeNotOk({
+          request: input,
+          output: output,
+        });
+      }
     } else {
       throw FetchResponseNotOk({
         status: response.status,
