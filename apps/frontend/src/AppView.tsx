@@ -4,10 +4,14 @@ import './App.css';
 import io from 'socket.io-client';
 import { IType } from '@repo/typex';
 import { ServiceAsFetch } from '@repo/typex/ServiceAsFetch';
+import { App, IApp } from '@repo/app';
 
-const socket = io('http://localhost:4000');
+const serviceUrl = 'http://localhost:4000';
 
-function App() {
+const socket = io(serviceUrl);
+const service = ServiceAsFetch<IApp>(serviceUrl);
+
+function AppView() {
   const [message, setMessage] = useState<string>('');
   const [notifications, setNotifications] = useState<string[]>([]);
 
@@ -37,21 +41,13 @@ function App() {
   };
 
   useEffect(() => {
-    async function app() {
+    (async function () {
       // send post
-      const url = 'http://localhost:4000';
 
-      const input = {
-        type: 'Hello',
-      };
-
-      const service = ServiceAsFetch<any>(url);
-      console.log(await service(input.type, input));
-    }
-
-    app().catch((error) => console.error(error));
+      console.log(await service(App.Hello, {}));
+    })().catch((error) => console.error(error));
   }, []);
   return <div className="App">hey</div>;
 }
 
-export default App;
+export default AppView;

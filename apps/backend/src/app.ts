@@ -1,5 +1,5 @@
 import { Service } from '@repo/typex';
-import { App, IApp, ISaidHello } from './app.type';
+import { App, IApp, ISaidHello } from '@repo/app';
 
 export function AppService() {
   return Service<IApp>({
