@@ -49,18 +49,23 @@ describe(Service.name, () => {
     function UserFunctions(): IServiceFunctions<IUserActions> {
       return ServiceFunctions<IUserActions>({
         CreateUser: async (input, context) => {
+          // test to call local function
           const user = await call(input, 'GetUser', {
             userId: 'userId123',
           });
 
+          // event definition
           const event: IUserCreated = {
             type: 'UserCreated',
             userId: user.id,
           };
 
+          // emit event and return it
           return await emit(input, event.type, event);
         },
         GetUser: async (input, context) => {
+
+          // return a test user
           return {
             type: 'User',
             id: input.userId,
