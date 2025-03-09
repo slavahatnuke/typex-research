@@ -12,7 +12,9 @@ export function AppService() {
 
   return Service<IApp>({
     [App.Hello]: async (input, context) => {
-      return await emit(input, App.SaidHello, {  });
+      return await emit(input, App.SaidHello, {
+        type: App.SaidHello,
+      });
     },
   });
 }
