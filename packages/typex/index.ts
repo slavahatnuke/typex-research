@@ -288,6 +288,13 @@ export type IServiceEvent<
   input: ApiSpecification;
 };
 
+export function _serviceSetSubscribe(
+  service: IService<any, any, any>,
+  subscribe: ISubscribeService<any, any, any>,
+) {
+  (service as any)[_subscribe] = subscribe;
+}
+
 export function Service<
   ApiSpecification extends IType,
   Context extends IType | void = void,
@@ -349,7 +356,7 @@ export function Service<
   }) as IService<ApiSpecification, Context, Events>;
 
   // define subscribe
-  (service as any)[_subscribe] = subscribe;
+  _serviceSetSubscribe(service, subscribe);
 
   return service;
 }

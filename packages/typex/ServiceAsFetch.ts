@@ -1,4 +1,5 @@
 import {
+  _serviceSetSubscribe,
   IEvent,
   InMemoryBus,
   IService,
@@ -61,8 +62,7 @@ export function ServiceAsFetch<
     }
   }) as IService<ApiSpecification, Context>;
 
-  // define subscribe
-  (service as any).subscribe = subscribe;
+  _serviceSetSubscribe(service, subscribe);
 
   return service;
 }
