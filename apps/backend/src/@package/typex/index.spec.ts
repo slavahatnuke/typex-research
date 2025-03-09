@@ -1,7 +1,8 @@
 // LOCAL
 // types testing
-import { ICommand, IEvent, IModel, IQuery, Service } from './index';
+import { ICommand, IEvent, IGetServiceEvents, IModel, IQuery, Service, EmitServiceEvent } from './index';
 import { describe, expect, it } from 'vitest';
+import { Collect } from './collect';
 
 type IUserCreated = IEvent<{ type: 'UserCreated'; userId: string }>;
 
@@ -21,26 +22,41 @@ type IUserReadModel = IModel<{
 type IGetUser = IQuery<{ type: 'GetUser'; userId: string }, IUserReadModel>;
 
 type IUserActions = ICreateUser | IGetUser;
+type IUserEvents = IGetServiceEvents<IUserActions>;
+
+const x: IUserEvents = {
+  type: 'UserCreated',
+  userId: 'user123',
+}
 
 describe(Service.name, () => {
   it('Service', async () => {
-    const userApi = Service<IUserActions>({
-      CreateUser: async (input, context) => {
-        const event: IUserCreated = {
-          type: 'UserCreated',
-          userId: 'userId123',
-        };
-        return event;
+    const emit = EmitServiceEvent<IUserEvents>();
+
+    const events = Collect();
+    const userApi = Service<IUserActions>(
+      {
+        CreateUser: async (input, context) => {
+          const event: IUserCreated = {
+            type: 'UserCreated',
+            userId: 'userId123',
+          };
+
+          return await emit(input, event.type, event);
+        },
+        GetUser: async (input, context) => {
+          return {
+            type: 'User',
+            id: input.userId,
+            email: 'email',
+            name: 'name',
+          };
+        },
       },
-      GetUser: async (input, context) => {
-        return {
-          type: 'User',
-          id: input.userId,
-          email: 'email',
-          name: 'name',
-        };
-      },
-    });
+      async (event, context, input) => events({ event, input, context }),
+    );
+
+    expect(events()).toEqual([]);
 
     const userCreated = await userApi('CreateUser', {
       email: 'email',
@@ -60,5 +76,20 @@ describe(Service.name, () => {
       id: 'userId123',
       name: 'name',
     });
+
+    expect(events()).toEqual([
+      {
+        context: undefined,
+        event: {
+          type: 'UserCreated',
+          userId: 'userId123',
+        },
+        input: {
+          email: 'email',
+          name: 'name',
+          type: 'CreateUser',
+        },
+      },
+    ]);
   });
 });

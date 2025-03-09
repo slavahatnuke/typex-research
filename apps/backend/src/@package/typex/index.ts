@@ -1,4 +1,5 @@
 // type
+
 export type IType<Type extends { type: string } = { type: string }> =
   Readonly<Type>;
 
@@ -11,6 +12,7 @@ export type IUseType<
 
 type IOptional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 type IRequire<T, K extends keyof T> = Omit<Partial<T>, K> & Pick<T, K>;
+export type IValueOfRecord<R extends Record<any, any>> = R[keyof R];
 
 // meta
 const _meta = Symbol('_meta');
@@ -100,7 +102,7 @@ type IErrorAction = {
 };
 
 export type IError<Type extends IType> = IMetaType<
-  Error & Type,
+  Error & { toJSON: Type & Error } & Type,
   IErrorAction | IErrorPayload<Type>
 >;
 
@@ -133,6 +135,15 @@ export function NewError<Type extends IType>(
       super(type);
       Object.assign(this, payload);
       this.origin = origin;
+    }
+
+    toJSON() {
+      return {
+        ...this,
+        type: this.type,
+        name: this.name,
+        stack: this.stack,
+      };
     }
   }
 
@@ -205,18 +216,149 @@ export type IServiceFunctions<
   ) => Promise<IServiceOutput<ApiSpecification, Type>>;
 };
 
+export type IEmitServiceEvent<
+  Events extends IType,
+  Context extends IType | void = void,
+> = <EventType extends Events['type']>(
+  input: ICommand<any> | IQuery<any, any>,
+  eventType: EventType,
+  event: IOptional<IUseType<IMetaFree<Events>, EventType>, 'type'>,
+  context?: Context,
+) => Promise<IUseType<IMetaFree<Events>, EventType>>;
+
+export function EmitServiceEvent<
+  Events extends IType,
+  Context extends IType | void = void,
+>(): IEmitServiceEvent<Events, Context> {
+  return async (input, eventType, event, context) => {
+    // @ts-ignore
+    const emitter = input[_emitter];
+
+    if (emitter) {
+      // @ts-ignore
+      return await emitter(input, eventType, event, context);
+    } else {
+      throw ServiceEventEmitterNotFound({
+        input,
+        event,
+        context,
+      });
+    }
+  };
+}
+
+export type IServiceCall<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+> = <InputType extends ApiSpecification['type']>(
+  inputType: InputType,
+  input: IServiceInput<ApiSpecification, InputType>,
+  context?: Context,
+) => Promise<IServiceOutput<ApiSpecification, InputType>>;
+
+export function ServiceCall<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+>(): IServiceCall<ApiSpecification, Context> {
+  return async (inputType, input, context) => {
+    // @ts-ignore
+    const caller = inputType[_caller];
+
+    if (caller) {
+      // @ts-ignore
+      return await caller(inputType, input, context);
+    } else {
+      throw ServiceCallerNotFound({
+        inputType,
+        input,
+        context,
+      });
+    }
+  };
+}
+
+const _emitter = Symbol('_emitter');
+const _caller = Symbol('_caller');
+
+type IGiveEventsPayloadOfAction<Action extends IType> = IUseType<
+  IGetMeta<Action>,
+  Payload.Events
+>;
+
+type IGetActionEvents<Action extends IType> =
+  IGiveEventsPayloadOfAction<Action> extends IEventsPayload<IType>
+    ? IGiveEventsPayloadOfAction<Action>['events']
+    : never;
+
+export type IGetServiceEvents<ApiSpecification extends IType> = IValueOfRecord<
+  Readonly<{
+    [Type in ApiSpecification['type']]: IGetActionEvents<
+      IUseType<ApiSpecification, Type>
+    >;
+  }>
+>;
+
+export type IServiceEventsOutput<
+  ApiSpecification extends IType,
+  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
+  Context extends IType | void = void,
+> = (
+  event: Events,
+  context: Context,
+  input: ApiSpecification,
+) => Promise<unknown>;
+
 export function Service<
   ApiSpecification extends IType,
   Context extends IType | void = void,
+  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
 >(
   functions: IServiceFunctions<ApiSpecification, Context>,
+  events?: IServiceEventsOutput<ApiSpecification, Events, Context>,
 ): IService<ApiSpecification, Context> {
+  const _events: IServiceEventsOutput<ApiSpecification, Events, Context> =
+    events ?? (async (): Promise<unknown> => undefined);
+
   return async function service(type, input, context) {
     // @ts-ignore
     const fn = functions[type];
     if (fn) {
       // @ts-ignore
-      return await fn({ ...input, type }, context);
+      return await fn(
+        //@ts-ignore
+        {
+          ...input,
+
+          type,
+
+          get [_emitter]() {
+            return (async (input, eventType, event, _context) => {
+              const _input = {
+                ...input,
+              };
+
+              // @ts-ignore
+              _input[_caller] && delete input[_caller];
+
+              // @ts-ignore
+              _input[_emitter] && delete input[_emitter];
+
+              await _events(
+                // @ts-ignore
+                { ...event, type: eventType },
+                _context ?? context,
+                input,
+              );
+              return event;
+            }) as IEmitServiceEvent<IType, Context>;
+          },
+
+          get [_caller]() {
+            return service;
+          },
+        },
+        context,
+      );
     } else {
       throw ServiceFunctionNotFound({
         functionName: type,
@@ -225,8 +367,12 @@ export function Service<
   };
 }
 
+export function emit() {}
+
 export enum ServiceError {
   ServiceFunctionNotFound = 'ServiceFunctionNotFound',
+  ServiceCallerNotFound = 'ServiceCallerNotFound',
+  ServiceEventEmitterNotFound = 'ServiceEventEmitterNotFound',
 }
 
 export type IServiceError = IError<{
@@ -234,6 +380,29 @@ export type IServiceError = IError<{
   functionName: string;
 }>;
 
+export type IServiceCallerNotFound = IError<{
+  type: ServiceError.ServiceCallerNotFound;
+  inputType: string;
+  input: IType | any;
+  context: IType | any;
+}>;
+
 export const ServiceFunctionNotFound = NewError<IServiceError>(
   ServiceError.ServiceFunctionNotFound,
 );
+
+export const ServiceCallerNotFound = NewError<IServiceCallerNotFound>(
+  ServiceError.ServiceCallerNotFound,
+);
+
+export type IServiceEventEmitterNotFound = IError<{
+  type: ServiceError.ServiceEventEmitterNotFound;
+  input: IType | Record<any, any>;
+  event: IType | Record<any, any>;
+  context: IType | any;
+}>;
+
+export const ServiceEventEmitterNotFound =
+  NewError<IServiceEventEmitterNotFound>(
+    ServiceError.ServiceEventEmitterNotFound,
+  );
