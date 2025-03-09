@@ -5,8 +5,11 @@ import {
   IGetServiceEvents,
   IModel,
   IQuery,
+  IServiceFunctions,
+  IServiceOutputEvents,
   Service,
   ServiceCall,
+  ServiceFunctions,
 } from './index';
 import { describe, expect, it } from 'vitest';
 import { Collect } from '../testing/collect';
@@ -38,12 +41,13 @@ const GetServiceEventsTypeTest1: IUserEvents = {
 
 describe(Service.name, () => {
   it('Service', async () => {
+    // helpers to emit events and call other functions in service
     const emit = EmitServiceEvent<IUserEvents>();
     const call = ServiceCall<IUserActions>();
 
-    const events = Collect();
-    const userApi = Service<IUserActions>(
-      {
+    // functions of the service
+    function UserFunctions(): IServiceFunctions<IUserActions> {
+      return ServiceFunctions<IUserActions>({
         CreateUser: async (input, context) => {
           const user = await call(input, 'GetUser', {
             userId: 'userId123',
@@ -64,24 +68,45 @@ describe(Service.name, () => {
             name: 'name',
           };
         },
+      });
+    }
+
+    // collect events emitted by the service
+    const collectEvents = Collect();
+    const events: IServiceOutputEvents<IUserActions> = async (
+      event,
+      context,
+      input,
+    ) =>
+      collectEvents({
+        event,
+        input,
+        context,
+      });
+
+    // api
+    const api = Service<IUserActions>(
+      {
+        ...UserFunctions(),
       },
-      async (event, context, input) => events({ event, input, context }),
+      events,
     );
 
-    expect(events()).toEqual([]);
+    // check that no events are emitted
+    expect(collectEvents()).toEqual([]);
 
-    const userCreated = await userApi('CreateUser', {
+    // create a user
+    const userCreated = await api('CreateUser', {
       email: 'email',
       name: 'name',
     });
-
     expect(userCreated).toEqual({
       type: 'UserCreated',
       userId: 'userId123',
     });
 
-    const user = await userApi('GetUser', { userId: userCreated.userId });
-
+    // get the user
+    const user = await api('GetUser', { userId: userCreated.userId });
     expect(user).toEqual({
       type: 'User',
       email: 'email',
@@ -89,7 +114,8 @@ describe(Service.name, () => {
       name: 'name',
     });
 
-    expect(events()).toEqual([
+    // check that the events are emitted
+    expect(collectEvents()).toEqual([
       {
         context: undefined,
         event: {

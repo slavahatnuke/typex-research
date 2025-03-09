@@ -245,7 +245,7 @@ type IGetServiceEventsFromActions<ApiSpecification extends IType> =
 export type IGetServiceEvents<ApiSpecification extends IType> =
   IGetServiceEventsFromActions<ApiSpecification>;
 
-export type IServiceEventsOutput<
+export type IServiceOutputEvents<
   ApiSpecification extends IType,
   Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
   Context extends IType | void = void,
@@ -255,15 +255,24 @@ export type IServiceEventsOutput<
   input: ApiSpecification,
 ) => Promise<unknown>;
 
+export function ServiceFunctions<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+>(
+  input: IServiceFunctions<ApiSpecification, Context>,
+): IServiceFunctions<ApiSpecification, Context> {
+  return input;
+}
+
 export function Service<
   ApiSpecification extends IType,
   Context extends IType | void = void,
   Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
 >(
   functions: IServiceFunctions<ApiSpecification, Context>,
-  events?: IServiceEventsOutput<ApiSpecification, Events, Context>,
+  events?: IServiceOutputEvents<ApiSpecification, Events, Context>,
 ): IService<ApiSpecification, Context> {
-  const _events: IServiceEventsOutput<ApiSpecification, Events, Context> =
+  const _events: IServiceOutputEvents<ApiSpecification, Events, Context> =
     events ?? (async (): Promise<unknown> => undefined);
 
   return async function service(type, input, context) {
