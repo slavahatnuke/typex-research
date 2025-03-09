@@ -5,8 +5,8 @@ import {
   IGetServiceEvents,
   IModel,
   IQuery,
+  IServiceEvent,
   IServiceFunctions,
-  IServiceOutputEvents,
   Service,
   ServiceCall,
   ServiceFunctions,
@@ -64,7 +64,6 @@ describe(Service.name, () => {
           return await emit(input, event.type, event);
         },
         GetUser: async (input, context) => {
-
           // return a test user
           return {
             type: 'User',
@@ -77,28 +76,17 @@ describe(Service.name, () => {
     }
 
     // collect events emitted by the service
-    const collectEvents = Collect();
-    const events: IServiceOutputEvents<IUserActions> = async (
-      event,
-      context,
-      input,
-    ) =>
-      collectEvents({
-        event,
-        input,
-        context,
-      });
+    const events = Collect<IServiceEvent<any>>();
 
     // api
-    const api = Service<IUserActions>(
-      {
-        ...UserFunctions(),
-      },
-      events,
-    );
+    const api = Service<IUserActions>({
+      ...UserFunctions(),
+    });
+
+    const un = api.subscribe(async (evt) => events(evt));
 
     // check that no events are emitted
-    expect(collectEvents()).toEqual([]);
+    expect(events()).toEqual([]);
 
     // create a user
     const userCreated = await api('CreateUser', {
@@ -120,7 +108,7 @@ describe(Service.name, () => {
     });
 
     // check that the events are emitted
-    expect(collectEvents()).toEqual([
+    expect(events()).toEqual([
       {
         context: undefined,
         event: {

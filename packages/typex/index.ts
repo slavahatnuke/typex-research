@@ -11,7 +11,7 @@ export type IUseType<
 // helpers
 
 type IOptional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
-type IRequire<T, K extends keyof T> = Omit<Partial<T>, K> & Pick<T, K>;
+// type IRequire<T, K extends keyof T> = Omit<Partial<T>, K> & Pick<T, K>;
 type IGetRecordValues<R extends Record<any, any>> = R[keyof R];
 
 // meta
@@ -170,11 +170,17 @@ type IGiveErrorPayload<
 export type IService<
   ApiSpecification extends IType,
   Context extends IType | void = void,
-> = <InputType extends ApiSpecification['type']>(
+  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
+> = (<InputType extends ApiSpecification['type']>(
   type: InputType,
   input: IServiceInput<ApiSpecification, InputType>,
   context: Context,
-) => Promise<IServiceOutput<ApiSpecification, InputType>>;
+) => Promise<IServiceOutput<ApiSpecification, InputType>>) &
+  Readonly<{
+    subscribe: IBus<
+      IServiceEvent<ApiSpecification, Events, Context>
+    >['subscribe'];
+  }>;
 
 export type IServiceFunctions<
   ApiSpecification extends IType,
@@ -247,16 +253,6 @@ type IGetServiceEventsFromActions<ApiSpecification extends IType> =
 export type IGetServiceEvents<ApiSpecification extends IType> =
   IGetServiceEventsFromActions<ApiSpecification>;
 
-export type IServiceOutputEvents<
-  ApiSpecification extends IType,
-  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
-  Context extends IType | void = void,
-> = (
-  event: Events,
-  context: Context,
-  input: ApiSpecification,
-) => Promise<unknown>;
-
 export function ServiceFunctions<
   ApiSpecification extends IType,
   Context extends IType | void = void,
@@ -266,18 +262,27 @@ export function ServiceFunctions<
   return input;
 }
 
+export type IServiceEvent<
+  ApiSpecification extends IType,
+  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
+  Context extends IType | void = void,
+> = {
+  event: Events;
+  context: Context;
+  input: ApiSpecification;
+};
+
 export function Service<
   ApiSpecification extends IType,
   Context extends IType | void = void,
   Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
 >(
   functions: IServiceFunctions<ApiSpecification, Context>,
-  events?: IServiceOutputEvents<ApiSpecification, Events, Context>,
-): IService<ApiSpecification, Context> {
-  const _events: IServiceOutputEvents<ApiSpecification, Events, Context> =
-    events ?? (async (): Promise<unknown> => undefined);
+): IService<ApiSpecification, Context, Events> {
+  const { publish, subscribe } =
+    InMemoryBus<IServiceEvent<ApiSpecification, Events, Context>>();
 
-  return async function service(type, input, context) {
+  const service = (async (type, input, context) => {
     // @ts-ignore
     const fn = functions[type];
     if (fn) {
@@ -296,19 +301,19 @@ export function Service<
               };
 
               // @ts-ignore
-              _input[_caller] && delete input[_caller];
+              _input[_caller] && delete _input[_caller];
 
               // @ts-ignore
-              _input[_emitter] && delete input[_emitter];
+              _input[_emitter] && delete _input[_emitter];
 
               const _event = { ...event, type: eventType };
 
-              await _events(
+              await publish({
                 // @ts-ignore
-                _event,
-                _context ?? context,
-                input,
-              );
+                event: _event,
+                context: _context ?? context,
+                input: _input as any,
+              });
 
               return _event;
             }) as IEmitServiceEvent<IType, Context>;
@@ -325,7 +330,12 @@ export function Service<
         functionName: type,
       });
     }
-  };
+  }) as IService<ApiSpecification, Context, Events>;
+
+  // define subscribe
+  (service as any).subscribe = subscribe;
+
+  return service;
 }
 
 // service tools
@@ -433,3 +443,46 @@ export const ServiceEventEmitterNotFound =
   NewError<IServiceEventEmitterNotFound>(
     ServiceError.ServiceEventEmitterNotFound,
   );
+
+// bus
+
+export type IBus<Type extends Record<any, any>> = Readonly<{
+  publish: (message: Type) => Promise<unknown>;
+  subscribe: (subscriber: IBusSubscriber<Type>) => IBusUnsubscribe;
+}>;
+
+export function InMemoryBus<Type extends Record<any, any>>(): IBus<Type> {
+  const subscribersSet = new Set<IBusSubscriber<Type>>();
+  let subscribers: IBusSubscriber<Type>[] = [];
+
+  const publish = async (message: Type) => {
+    const promises: Promise<any>[] = [];
+
+    for (const subscriber of subscribers) {
+      promises.push(subscriber(message));
+    }
+
+    await Promise.all(promises);
+  };
+
+  const subscribe = (subscriber: IBusSubscriber<Type>) => {
+    subscribersSet.add(subscriber);
+    subscribers.push(subscriber);
+
+    return () => {
+      subscribersSet.delete(subscriber);
+      subscribers = Array.from(subscribers);
+    };
+  };
+
+  return {
+    publish,
+    subscribe,
+  };
+}
+
+export type IBusSubscriber<Type extends Record<any, any>> = (
+  message: Type,
+) => Promise<unknown>;
+
+export type IBusUnsubscribe = () => unknown;
