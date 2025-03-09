@@ -42,12 +42,11 @@ export function HttpServerAsService(
           if (request && 'type' in request) {
             answer(await service(request.type, request));
           } else {
-            answer({ type: 400 });
+            answer({ type: 400, request });
           }
         } catch (error) {
           console.error(error);
-          res.end(JSON.stringify({ type: 500 }));
-          answer({ type: 500 });
+          answer({ type: 500, reason: error });
         }
       });
     } else {

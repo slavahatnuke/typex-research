@@ -3,11 +3,11 @@ import './App.css';
 
 import io from 'socket.io-client';
 import { IType } from '@repo/typex';
+import { ServiceAsFetch } from '@repo/typex/ServiceAsFetch';
+
 const socket = io('http://localhost:4000');
 
-
 function App() {
-
   const [message, setMessage] = useState<string>('');
   const [notifications, setNotifications] = useState<string[]>([]);
 
@@ -22,7 +22,7 @@ function App() {
       console.log(msg);
     });
 
-    sendMessage({type: 'Hello IO'});
+    sendMessage({ type: 'Hello IO' });
 
     // Cleanup the socket connection when the component unmounts
     return () => {
@@ -36,34 +36,22 @@ function App() {
     setMessage('');
   };
 
-  useEffect(
-    () => {
-      async function app() {
-        // send post
-        const response = await fetch('http://localhost:4000', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            type: 'Hello',
-          }),
-        });
+  useEffect(() => {
+    async function app() {
+      // send post
+      const url = 'http://localhost:4000';
 
-        console.log(await response.json());
-      }
+      const input = {
+        type: 'Hello',
+      };
 
-      app()
-        .catch((error) => console.error(error));
+      const service = ServiceAsFetch<any>(url);
+      console.log(await service(input.type, input));
+    }
 
-    },
-    []
-  )
-  return (
-    <div className="App">
-     hey
-    </div>
-  );
+    app().catch((error) => console.error(error));
+  }, []);
+  return <div className="App">hey</div>;
 }
 
 export default App;

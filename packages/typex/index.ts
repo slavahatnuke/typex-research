@@ -121,7 +121,9 @@ export type IModel<Type extends IType = IType> = IMetaType<
 // errors
 
 export type INewError<Type extends IType> = (
-  payload: IOptional<IGiveErrorPayload<Type>, 'type'>,
+  payload: Type extends IError<IType>
+    ? IOptional<IGiveErrorPayload<Type>, 'type'>
+    : IOptional<IGiveErrorPayload<IError<Type>>, 'type'>,
 ) => IError<Type>;
 
 export function NewError<Type extends IType>(
