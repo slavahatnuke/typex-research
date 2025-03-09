@@ -11,10 +11,15 @@ function App() {
   const [message, setMessage] = useState<string>('');
   const [notifications, setNotifications] = useState<string[]>([]);
 
+  function onNotification(msg: string) {
+    setNotifications((prev) => [...prev, msg]);
+  }
+
   useEffect(() => {
     // Listen for "notification" event from the server
-    socket.on('notification', (msg: string) => {
-      setNotifications((prev) => [...prev, msg]);
+    socket.on('notification', (msg: any) => {
+      onNotification(msg);
+      console.log(msg);
     });
 
     sendMessage({type: 'Hello IO'});

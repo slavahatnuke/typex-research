@@ -2,6 +2,7 @@
 import { Server } from 'socket.io';
 import { AppService } from './app';
 import { HttpServerAsService } from '@repo/typex/HttpServerAsService';
+import { v4 } from 'uuid';
 
 const service = AppService();
 
@@ -19,6 +20,12 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log('New client connected');
 
+  const userId = v4();
+
+  socket.join(userId);
+
+  io.to(userId).emit('notification', { type: 'Hey you connected!!!' });
+
   socket.on('event', (data) => {
     console.log('>> ', data);
   });
@@ -29,6 +36,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    socket.leave(userId);
     console.log('Client disconnected');
   });
 });
