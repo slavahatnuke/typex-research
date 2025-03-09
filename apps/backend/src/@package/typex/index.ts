@@ -88,9 +88,12 @@ type IEventPayload<Payload extends IType> = IType<{
   payload: Payload;
 }>;
 
-export type IEvent<Payload extends IType> = IMetaType<
+export type IEvent<
+  Payload extends IType,
+  Events extends IType | void = void,
+> = IMetaType<
   Payload,
-  IActionType<Action.Event> | IEventPayload<Payload>
+  IActionType<Action.Event> | IEventPayload<Payload> | IEventsPayload<Events>
 >;
 
 type IErrorPayload<Type extends IType> = {
@@ -216,11 +219,13 @@ export type IServiceFunctions<
   ) => Promise<IServiceOutput<ApiSpecification, Type>>;
 };
 
+type IBase = ICommand<any> | IQuery<any, any> | IEvent<any>;
+
 export type IEmitServiceEvent<
   Events extends IType,
   Context extends IType | void = void,
 > = <EventType extends Events['type']>(
-  input: ICommand<any> | IQuery<any, any>,
+  base: IBase,
   eventType: EventType,
   event: IOptional<IUseType<IMetaFree<Events>, EventType>, 'type'>,
   context?: Context,
@@ -230,16 +235,16 @@ export function EmitServiceEvent<
   Events extends IType,
   Context extends IType | void = void,
 >(): IEmitServiceEvent<Events, Context> {
-  return async (input, eventType, event, context) => {
+  return async (base, eventType, event, context) => {
     // @ts-ignore
-    const emitter = input[_emitter];
+    const emitter = base[_emitter];
 
     if (emitter) {
       // @ts-ignore
-      return await emitter(input, eventType, event, context);
+      return await emitter(base, eventType, event, context);
     } else {
       throw ServiceEventEmitterNotFound({
-        input,
+        base,
         event,
         context,
       });
@@ -251,6 +256,7 @@ export type IServiceCall<
   ApiSpecification extends IType,
   Context extends IType | void = void,
 > = <InputType extends ApiSpecification['type']>(
+  base: IBase,
   inputType: InputType,
   input: IServiceInput<ApiSpecification, InputType>,
   context?: Context,
@@ -260,15 +266,16 @@ export function ServiceCall<
   ApiSpecification extends IType,
   Context extends IType | void = void,
 >(): IServiceCall<ApiSpecification, Context> {
-  return async (inputType, input, context) => {
+  return async (base, inputType, input, context) => {
     // @ts-ignore
-    const caller = inputType[_caller];
+    const caller = base[_caller];
 
     if (caller) {
       // @ts-ignore
       return await caller(inputType, input, context);
     } else {
       throw ServiceCallerNotFound({
+        base,
         inputType,
         input,
         context,
@@ -383,6 +390,7 @@ export type IServiceError = IError<{
 export type IServiceCallerNotFound = IError<{
   type: ServiceError.ServiceCallerNotFound;
   inputType: string;
+  base: IType | any;
   input: IType | any;
   context: IType | any;
 }>;
@@ -397,7 +405,7 @@ export const ServiceCallerNotFound = NewError<IServiceCallerNotFound>(
 
 export type IServiceEventEmitterNotFound = IError<{
   type: ServiceError.ServiceEventEmitterNotFound;
-  input: IType | Record<any, any>;
+  base: IType | Record<any, any>;
   event: IType | Record<any, any>;
   context: IType | any;
 }>;

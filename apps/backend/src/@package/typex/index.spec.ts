@@ -1,8 +1,8 @@
 // LOCAL
 // types testing
-import { ICommand, IEvent, IGetServiceEvents, IModel, IQuery, Service, EmitServiceEvent } from './index';
+import { EmitServiceEvent, ICommand, IEvent, IGetServiceEvents, IModel, IQuery, Service, ServiceCall } from './index';
 import { describe, expect, it } from 'vitest';
-import { Collect } from './collect';
+import { Collect } from '../testing/collect';
 
 type IUserCreated = IEvent<{ type: 'UserCreated'; userId: string }>;
 
@@ -27,19 +27,24 @@ type IUserEvents = IGetServiceEvents<IUserActions>;
 const x: IUserEvents = {
   type: 'UserCreated',
   userId: 'user123',
-}
+};
 
 describe(Service.name, () => {
   it('Service', async () => {
     const emit = EmitServiceEvent<IUserEvents>();
+    const call = ServiceCall<IUserActions>();
 
     const events = Collect();
     const userApi = Service<IUserActions>(
       {
         CreateUser: async (input, context) => {
+          const user = await call(input, 'GetUser', {
+            userId: 'userId123',
+          });
+
           const event: IUserCreated = {
             type: 'UserCreated',
-            userId: 'userId123',
+            userId: user.id,
           };
 
           return await emit(input, event.type, event);
