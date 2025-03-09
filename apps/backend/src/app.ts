@@ -1,14 +1,5 @@
-import { ICommand, IEvent, Service } from '@repo/typex';
-
-export enum App {
-  Hello = 'Hello',
-  SaidHello = 'SaidHello',
-}
-
-type IHello = ICommand<{ type: App.Hello }, ISaidHello, ISaidHello>;
-type ISaidHello = IEvent<{ type: App.SaidHello }>;
-
-export type IApp = IHello;
+import { Service } from '@repo/typex';
+import { App, IApp, ISaidHello } from './app.type';
 
 export function AppService() {
   return Service<IApp>({
@@ -18,5 +9,3 @@ export function AppService() {
     },
   });
 }
-
-AppService();

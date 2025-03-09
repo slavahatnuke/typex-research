@@ -1,8 +1,35 @@
-import React, { useEffect } from 'react';
-import logo from './logo.svg';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 
+import io from 'socket.io-client';
+import { IType } from '@repo/typex';
+const socket = io('http://localhost:4000');
+
+
 function App() {
+
+  const [message, setMessage] = useState<string>('');
+  const [notifications, setNotifications] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Listen for "notification" event from the server
+    socket.on('notification', (msg: string) => {
+      setNotifications((prev) => [...prev, msg]);
+    });
+
+    sendMessage({type: 'Hello IO'});
+
+    // Cleanup the socket connection when the component unmounts
+    return () => {
+      socket.off('notification');
+    };
+  }, []);
+
+  // Send a message to the server
+  const sendMessage = (message: IType) => {
+    socket.emit('send-message', message);
+    setMessage('');
+  };
 
   useEffect(
     () => {
@@ -29,20 +56,7 @@ function App() {
   )
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+     hey
     </div>
   );
 }
