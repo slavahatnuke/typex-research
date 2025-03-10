@@ -13,7 +13,7 @@ import {
   SubscribeService,
 } from './index';
 import { describe, expect, it } from 'vitest';
-import { Collect } from '@repo/testing/collect';
+import { Collect } from './testing/collect';
 
 type IUserCreated = IEvent<{ type: 'UserCreated'; userId: string }>;
 
