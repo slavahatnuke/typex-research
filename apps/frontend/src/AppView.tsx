@@ -9,7 +9,7 @@ import { App, IApp } from '@repo/app';
 const serviceUrl = 'http://localhost:4000/';
 
 const socket = io(serviceUrl);
-type IFrontendContext = { type: 'FrontendContext'; userToken: string };
+type IFrontendContext = { type: 'FrontendContext'; userToken: string, traceId: string };
 const service = ServiceAsFetch<IApp, IFrontendContext>(serviceUrl);
 
 const subscribeService = SubscribeService(service);
@@ -18,13 +18,16 @@ const unsubscribeService = subscribeService((message) => {
   console.log(message);
 });
 
-const userToken = `anonymous-id-${Math.random().toString(16).slice(2)}`;
+const shortId = () => Math.random().toString(16).slice(2);
+
+const userToken = `user-token-${(shortId())}`;
 function FrontendContext(
   context: Partial<IFrontendContext> = {},
 ): IType<IFrontendContext> {
   return {
     type: 'FrontendContext',
     userToken: userToken,
+    traceId: shortId(),
     ...context,
   };
 }
