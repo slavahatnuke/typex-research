@@ -1,16 +1,19 @@
 import http from 'http';
 import { IService, IType, SubscribeService } from './index';
 import { ensureSlashAtTheEnd } from './lib/ensureSlashAtTheEnd';
+import { deserializeJSON, serializeJSON } from './lib/serializeJSON';
 
 export function HttpServerAsService<Service extends IService<any, any, any>>(
   service: Service,
   {
     apiUrl = '/',
     SSE = true,
-    serialize = (value: any): string => JSON.stringify(value),
+    serialize = serializeJSON,
+    deserialize = deserializeJSON,
   }: Partial<{
     apiUrl: string;
     serialize: (value: any) => string;
+    deserialize: (value: string) => any;
     SSE: boolean;
   }> = {},
 ) {
@@ -49,7 +52,7 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
 
       req.on('end', async () => {
         try {
-          const request = JSON.parse(body);
+          const request = deserialize(body);
           if (request && 'type' in request) {
             // @ts-ignore
             answer(await service(request.type, request));

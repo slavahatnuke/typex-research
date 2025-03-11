@@ -8,6 +8,7 @@ import {
   NewError,
 } from './index';
 import { ensureSlashAtTheEnd } from './lib/ensureSlashAtTheEnd';
+import { deserializeJSON, serializeJSON } from './lib/serializeJSON';
 
 enum ServiceAsFetchError {
   FetchResponseNotOk = 'FetchResponseNotOk',
@@ -32,7 +33,15 @@ export function ServiceAsFetch<
   Context extends IType | void = void,
 >(
   url: string,
-  { SSE = true }: Partial<{ SSE: boolean }> = {},
+  {
+    SSE = true,
+    serialize = serializeJSON,
+    deserialize = deserializeJSON,
+  }: Partial<{
+    SSE: boolean;
+    serialize: (value: any) => string;
+    deserialize: (value: string) => any;
+  }> = {},
 ): IService<ApiSpecification, Context> {
   url = ensureSlashAtTheEnd(url);
 
@@ -45,7 +54,7 @@ export function ServiceAsFetch<
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ ...input, type }),
+      body: serialize({ ...input, type }),
     });
 
     if (response.ok) {
@@ -73,7 +82,7 @@ export function ServiceAsFetch<
 
     eventSource.onmessage = async (message) => {
       try {
-        const { event, context, input } = JSON.parse(message.data);
+        const { event, context, input } = deserialize(message.data);
         await publish({
           event,
           context: undefined as any, // should not give backend context to the client
