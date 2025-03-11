@@ -2,14 +2,20 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 
 import io from 'socket.io-client';
-import { IType } from '@slavax/typex';
+import { IType, SubscribeService } from '@slavax/typex';
 import { ServiceAsFetch } from '@slavax/typex/ServiceAsFetch';
 import { App, IApp } from '@repo/app';
 
-const serviceUrl = 'http://localhost:4000';
+const serviceUrl = 'http://localhost:4000/';
 
 const socket = io(serviceUrl);
 const service = ServiceAsFetch<IApp>(serviceUrl);
+
+const subscribeService = SubscribeService(service);
+
+const unsubscribeService = subscribeService((message) => {
+  console.log({ message });
+});
 
 function AppView() {
   const [message, setMessage] = useState<string>('');

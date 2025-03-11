@@ -62,6 +62,25 @@ export function ServiceAsFetch<
     }
   }) as IService<ApiSpecification, Context>;
 
+  const eventSource = new EventSource(`${url}SSE`);
+
+  eventSource.onmessage = async (message) => {
+    try {
+      const { event, context, input } = JSON.parse(message.data);
+      await publish({
+        event,
+        context,
+        input
+      })
+    } catch (error) {
+      console.error(error, message);
+    }
+  };
+
+  eventSource.onerror = (error) => {
+    console.error('EventSource failed:', error);
+  };
+
   _serviceSetSubscribe(service, subscribe);
 
   return service;

@@ -1,10 +1,14 @@
 import http from 'http';
-import { IService, IType } from './index';
+import { IService, IType, SubscribeService } from './index';
 
 export function HttpServerAsService<Service extends IService<any, any, any>>(
   service: Service,
   { apiUrl = '/' }: Partial<{ apiUrl: string }> = {},
 ) {
+  function serialize(value: any): string {
+    return JSON.stringify(value);
+  }
+
   return http.createServer(async (req, res) => {
     // Helper function to send the response
     function answer<Type extends IType | { type: number }>(response: Type) {
@@ -14,7 +18,7 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', // Allow specific HTTP methods
         'Access-Control-Allow-Headers': 'Content-Type', // Allow headers in the request
       });
-      res.end(JSON.stringify(response));
+      res.end(serialize(response));
     }
 
     // Handle preflight CORS request (OPTIONS)
@@ -49,6 +53,30 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
           console.error(error);
           answer({ type: 500, reason: error });
         }
+      });
+    } else if (req.method === 'GET' && req.url === `${apiUrl}SSE`) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS',
+      );
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+      const subscribeService = SubscribeService(service);
+
+      const unsubscribeService = subscribeService(
+        ({ event, context, input }) => {
+          res.write(`data: ${serialize({ event, context, input })}\n\n`);
+        },
+      );
+
+      req.on('close', () => {
+        unsubscribeService();
+        res.end();
       });
     } else {
       res.writeHead(404, { 'Content-Type': 'text/plain' });

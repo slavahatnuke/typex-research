@@ -508,6 +508,6 @@ export function InMemoryBus<Type extends Record<any, any>>(): IBus<Type> {
 
 export type IBusSubscriber<Type extends Record<any, any>> = (
   message: Type,
-) => Promise<unknown>;
+) => IPromise<unknown>;
 
 export type IBusUnsubscribe = () => unknown;
