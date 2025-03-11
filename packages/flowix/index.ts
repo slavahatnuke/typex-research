@@ -1,8 +1,9 @@
 // specification
 
 import { IType, IUseType } from '@repo/typex';
+import { fastId } from './fastId';
 
-export enum FlowIX {
+export enum FlowSpec {
   Command = 'Command',
   CommandId = 'CommandId',
 
@@ -27,119 +28,118 @@ export enum FlowIX {
   Happened = 'Happened',
 }
 
-type Use<Type extends FlowIX> = IUseType<IFlowIX, Type>;
-//
-// const _input = Symbol('_input');
-// const _output = Symbol('_output');
-//
-// type IO<Input = unknown, Output = unknown> = Readonly<{
-//   [_input]?: Input;
-//   [_output]?: Output;
-// }>;
-//
-// export type IGetIO<T> =
-//   T extends IO<infer Input, infer Output>
-//     ? {
-//         input: Exclude<Input, undefined>;
-//         output: Exclude<Output, undefined>;
-//       }
-//     : never;
+type Use<Type extends FlowSpec> = IUseType<IFlowSpec, Type>;
 
-export type IFlowIX =
+export type IFlowSpec =
   | IType<{
-      type: FlowIX.Command;
+      type: FlowSpec.Command;
       name: string;
-      description: string;
+      title: string;
     }>
   | IType<{
-      type: FlowIX.CommandId;
-      name: string;
-    }>
-  | IType<{
-      type: FlowIX.Event;
-      name: string;
-      description: string;
-    }>
-  | IType<{
-      type: FlowIX.EventId;
+      type: FlowSpec.CommandId;
       name: string;
     }>
   | IType<{
-      type: FlowIX.Query;
+      type: FlowSpec.Event;
       name: string;
-      description: string;
+      title: string;
     }>
   | IType<{
-      type: FlowIX.QueryId;
+      type: FlowSpec.EventId;
       name: string;
     }>
   | IType<{
-      type: FlowIX.When;
+      type: FlowSpec.Query;
+      name: string;
+      title: string;
+    }>
+  | IType<{
+      type: FlowSpec.QueryId;
+      name: string;
+    }>
+  | IType<{
+      type: FlowSpec.When;
       subject: Use<
         // meaning requested
-        | FlowIX.CommandId
-        | FlowIX.QueryId
-        | FlowIX.EventId
+        | FlowSpec.CommandId
+        | FlowSpec.QueryId
+        | FlowSpec.EventId
 
         // the same as above - requested
-        | FlowIX.Command
-        | FlowIX.Query
-        | FlowIX.Event
+        | FlowSpec.Command
+        | FlowSpec.Query
+        | FlowSpec.Event
 
         // full form with modifiers
-        | FlowIX.Requested
-        | FlowIX.Resolved
-        | FlowIX.Rejected
+        | FlowSpec.Requested
+        | FlowSpec.Resolved
+        | FlowSpec.Rejected
 
         // full form for events
-        | FlowIX.Happened
+        | FlowSpec.Happened
       >;
     }>
   | IType<{
-      type: FlowIX.Then;
-      when: Use<FlowIX.When>;
+      type: FlowSpec.Then;
+      when: Use<FlowSpec.When>;
       then:
         | ((input: unknown, toolkit: IFlowIXToolkit) => IPromise)
-        | Use<FlowIX.Handler | FlowIX.Resolve | FlowIX.Reject>;
+        | Use<FlowSpec.Handler | FlowSpec.Resolve | FlowSpec.Reject>;
     }>
   | IType<{
-      type: FlowIX.Handler;
+      type: FlowSpec.Handler;
       handler: (input: unknown, toolkit: IFlowIXToolkit) => IPromise;
     }>
   | IType<{
-      type: FlowIX.Resolve;
+      type: FlowSpec.Resolve;
       subject: Use<
-        FlowIX.CommandId | FlowIX.QueryId | FlowIX.Command | FlowIX.Query
-      >;
-      handler: (input: unknown, toolkit: IFlowIXToolkit) => IPromise;
-    }>
-  | IType<{
-      type: FlowIX.Reject;
-      subject: Use<
-        FlowIX.CommandId | FlowIX.QueryId | FlowIX.Command | FlowIX.Query
+        | FlowSpec.CommandId
+        | FlowSpec.QueryId
+        | FlowSpec.Command
+        | FlowSpec.Query
       >;
       handler: (input: unknown, toolkit: IFlowIXToolkit) => IPromise;
     }>
   | IType<{
-      type: FlowIX.Happened;
-      subject: Use<FlowIX.EventId | FlowIX.Event>;
+      type: FlowSpec.Reject;
+      subject: Use<
+        | FlowSpec.CommandId
+        | FlowSpec.QueryId
+        | FlowSpec.Command
+        | FlowSpec.Query
+      >;
+      handler: (input: unknown, toolkit: IFlowIXToolkit) => IPromise;
     }>
   | IType<{
-      type: FlowIX.Requested;
+      type: FlowSpec.Happened;
+      subject: Use<FlowSpec.EventId | FlowSpec.Event>;
+    }>
+  | IType<{
+      type: FlowSpec.Requested;
       subject: Use<
-        FlowIX.CommandId | FlowIX.QueryId | FlowIX.Command | FlowIX.Query
+        | FlowSpec.CommandId
+        | FlowSpec.QueryId
+        | FlowSpec.Command
+        | FlowSpec.Query
       >;
     }>
   | IType<{
-      type: FlowIX.Resolved;
+      type: FlowSpec.Resolved;
       subject: Use<
-        FlowIX.CommandId | FlowIX.QueryId | FlowIX.Command | FlowIX.Query
+        | FlowSpec.CommandId
+        | FlowSpec.QueryId
+        | FlowSpec.Command
+        | FlowSpec.Query
       >;
     }>
   | IType<{
-      type: FlowIX.Rejected;
+      type: FlowSpec.Rejected;
       subject: Use<
-        FlowIX.CommandId | FlowIX.QueryId | FlowIX.Command | FlowIX.Query
+        | FlowSpec.CommandId
+        | FlowSpec.QueryId
+        | FlowSpec.Command
+        | FlowSpec.Query
       >;
     }>;
 
@@ -147,140 +147,170 @@ type IPromise<Type = unknown> = Promise<Type> | Type;
 
 type IFlowIXToolkit = {
   emit: (
-    event: Use<FlowIX.Event | FlowIX.EventId>,
+    event: Use<FlowSpec.Event | FlowSpec.EventId>,
     payload: unknown,
   ) => IPromise;
 };
 
 type ISpecifyLanguage = {
-  command: (name: string, description?: string) => Use<FlowIX.Command>; // command
+  command: (
+    name: string,
+    title?: string,
+  ) => Use<FlowSpec.Command> & IFlowDefinitionMeta; // command
 
-  event: (name: string, description?: string) => Use<FlowIX.Event>; // event
+  event: (
+    name: string,
+    title?: string,
+  ) => Use<FlowSpec.Event> & IFlowDefinitionMeta; // event
 
-  query: (name: string, description?: string) => Use<FlowIX.Query>; // query
+  query: (
+    name: string,
+    title?: string,
+  ) => Use<FlowSpec.Query> & IFlowDefinitionMeta; // query
 
-  when: <Subject extends Use<FlowIX.When>['subject']>(
+  when: <Subject extends Use<FlowSpec.When>['subject']>(
     subject: Subject,
   ) => Readonly<{
-    then: (input: Use<FlowIX.Then>['then']) => Use<FlowIX.Then>;
+    then: (
+      input: Use<FlowSpec.Then>['then'],
+    ) => Use<FlowSpec.Then> & IFlowDefinitionMeta;
   }>; // when
 
-  resolve: <Subject extends Use<FlowIX.Resolve>['subject']>(
+  resolve: <Subject extends Use<FlowSpec.Resolve>['subject']>(
     subject: Subject,
-    handler: Use<FlowIX.Resolve>['handler'],
-  ) => Use<FlowIX.Resolve>; // resolve
+    handler: Use<FlowSpec.Resolve>['handler'],
+  ) => Use<FlowSpec.Resolve>; // resolve
 
-  reject: <Subject extends Use<FlowIX.Reject>['subject']>(
+  reject: <Subject extends Use<FlowSpec.Reject>['subject']>(
     subject: Subject,
-    handler: Use<FlowIX.Reject>['handler'],
-  ) => Use<FlowIX.Reject>; // reject
+    handler: Use<FlowSpec.Reject>['handler'],
+  ) => Use<FlowSpec.Reject>; // reject
 
   happened: <
-    Subject extends Use<FlowIX.Happened>['subject'] | Use<FlowIX.Event>,
+    Subject extends Use<FlowSpec.Happened>['subject'] | Use<FlowSpec.Event>,
   >(
     subject: Subject,
-  ) => Use<FlowIX.Happened>; // happened
+  ) => Use<FlowSpec.Happened>; // happened
 
-  requested: <Subject extends Use<FlowIX.Requested>['subject']>(
+  requested: <Subject extends Use<FlowSpec.Requested>['subject']>(
     subject: Subject,
-  ) => Use<FlowIX.Requested>; // requested
+  ) => Use<FlowSpec.Requested>; // requested
 
-  resolved: <Subject extends Use<FlowIX.Resolved>['subject']>(
+  resolved: <Subject extends Use<FlowSpec.Resolved>['subject']>(
     subject: Subject,
-  ) => Use<FlowIX.Resolved>; // resolved
+  ) => Use<FlowSpec.Resolved>; // resolved
 
-  rejected: <Subject extends Use<FlowIX.Rejected>['subject']>(
+  rejected: <Subject extends Use<FlowSpec.Rejected>['subject']>(
     subject: Subject,
-  ) => Use<FlowIX.Rejected>; // rejected
+  ) => Use<FlowSpec.Rejected>; // rejected
 };
 
-export type ISpecifyOutput = Use<
-  FlowIX.Command | FlowIX.Query | FlowIX.Event | FlowIX.When | FlowIX.Then
+type IFlowDefinition = Use<
+  | FlowSpec.Command
+  | FlowSpec.Query
+  | FlowSpec.Event
+  | FlowSpec.When
+  | FlowSpec.Then
 >;
 
-export type ISpecify = (
+export type IFlowDefinitionMeta = Readonly<{ id: string; meta: unknown }>;
+export type IDefineFlowOutput = IFlowDefinition & IFlowDefinitionMeta;
+
+export type IDefineFlow = (
   specifier: (language: ISpecifyLanguage) => unknown,
-) => ISpecifyOutput[];
+) => IDefineFlowOutput[];
 
-export const specify: ISpecify = (
-  specifier: (language: ISpecifyLanguage) => unknown,
-): ISpecifyOutput[] => {
-  const outputs: ISpecifyOutput[] = [];
+export function DefineFlow<Meta = undefined>(
+  meta: Meta,
+  { NewId = fastId }: Partial<{ NewId: () => string }> = {},
+): IDefineFlow {
+  return function _DefineFlow(
+    specifier: (language: ISpecifyLanguage) => unknown,
+  ) {
+    const outputs: IDefineFlowOutput[] = [];
 
-  const add = <Type extends ISpecifyOutput>(output: Type): Type => {
-    outputs.push(output);
-    return output;
-  };
-
-  specifier({
-    command: (name, description) =>
-      add({
-        type: FlowIX.Command,
-        name,
-        description: description ?? '',
-      }),
-
-    event: (name, description) =>
-      add({
-        type: FlowIX.Event,
-        name,
-        description: description ?? '',
-      }),
-
-    query: (name, description) =>
-      add({
-        type: FlowIX.Query,
-        name,
-        description: description ?? '',
-      }),
-
-    when: (subject) => {
-      const when = add({
-        type: FlowIX.When,
-        subject,
-      });
-      return {
-        then: (input) =>
-          add({
-            type: FlowIX.Then,
-            when: when,
-            then: input,
-          }),
+    const add = <Type extends IFlowDefinition>(
+      output: Type,
+    ): Type & IFlowDefinitionMeta => {
+      const item = {
+        ...output,
+        id: NewId(),
+        meta,
       };
-    },
+      outputs.push(item);
+      return item;
+    };
 
-    resolve: (subject, handler) => ({
-      type: FlowIX.Resolve,
-      subject,
-      handler,
-    }),
+    specifier({
+      command: (name, title) =>
+        add({
+          type: FlowSpec.Command,
+          name,
+          title: title ?? '',
+        }),
 
-    reject: (subject, handler) => ({
-      type: FlowIX.Reject,
-      subject,
-      handler,
-    }),
+      event: (name, title) =>
+        add({
+          type: FlowSpec.Event,
+          name,
+          title: title ?? '',
+        }),
 
-    happened: (subject) => ({
-      type: FlowIX.Happened,
-      subject,
-    }),
+      query: (name, title) =>
+        add({
+          type: FlowSpec.Query,
+          name,
+          title: title ?? '',
+        }),
 
-    requested: (subject) => ({
-      type: FlowIX.Requested,
-      subject,
-    }),
+      when: (subject) => {
+        const when = add({
+          type: FlowSpec.When,
+          subject,
+        });
+        return {
+          then: (input) =>
+            add({
+              type: FlowSpec.Then,
+              when: when,
+              then: input,
+            }),
+        };
+      },
 
-    resolved: (subject) => ({
-      type: FlowIX.Resolved,
-      subject,
-    }),
+      resolve: (subject, handler) => ({
+        type: FlowSpec.Resolve,
+        subject,
+        handler,
+      }),
 
-    rejected: (subject) => ({
-      type: FlowIX.Rejected,
-      subject,
-    }),
-  });
+      reject: (subject, handler) => ({
+        type: FlowSpec.Reject,
+        subject,
+        handler,
+      }),
 
-  return outputs;
-};
+      happened: (subject) => ({
+        type: FlowSpec.Happened,
+        subject,
+      }),
+
+      requested: (subject) => ({
+        type: FlowSpec.Requested,
+        subject,
+      }),
+
+      resolved: (subject) => ({
+        type: FlowSpec.Resolved,
+        subject,
+      }),
+
+      rejected: (subject) => ({
+        type: FlowSpec.Rejected,
+        subject,
+      }),
+    });
+
+    return outputs;
+  };
+}
