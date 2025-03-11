@@ -6,10 +6,12 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
   service: Service,
   {
     apiUrl = '/',
+    SSE = true,
     serialize = (value: any): string => JSON.stringify(value),
   }: Partial<{
     apiUrl: string;
     serialize: (value: any) => string;
+    SSE: boolean;
   }> = {},
 ) {
   apiUrl = ensureSlashAtTheEnd(apiUrl);
@@ -59,7 +61,7 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
           answer({ type: 500, reason: error });
         }
       });
-    } else if (req.method === 'GET' && req.url === `${apiUrl}SSE`) {
+    } else if (SSE && req.method === 'GET' && req.url === `${apiUrl}SSE`) {
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');

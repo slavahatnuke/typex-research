@@ -30,7 +30,10 @@ export const OutputTypeNotOk = NewError<{
 export function ServiceAsFetch<
   ApiSpecification extends IType = IType,
   Context extends IType | void = void,
->(url: string): IService<ApiSpecification, Context> {
+>(
+  url: string,
+  { SSE = true }: Partial<{ SSE: boolean }> = {},
+): IService<ApiSpecification, Context> {
   url = ensureSlashAtTheEnd(url);
 
   const { publish, subscribe } =
@@ -65,24 +68,26 @@ export function ServiceAsFetch<
     }
   }) as IService<ApiSpecification, Context>;
 
-  const eventSource = new EventSource(`${url}SSE`);
+  if (SSE) {
+    const eventSource = new EventSource(`${url}SSE`);
 
-  eventSource.onmessage = async (message) => {
-    try {
-      const { event, context, input } = JSON.parse(message.data);
-      await publish({
-        event,
-        context: undefined as any, // should not give backend context to the client
-        input,
-      });
-    } catch (error) {
-      console.error(error, message);
-    }
-  };
+    eventSource.onmessage = async (message) => {
+      try {
+        const { event, context, input } = JSON.parse(message.data);
+        await publish({
+          event,
+          context: undefined as any, // should not give backend context to the client
+          input,
+        });
+      } catch (error) {
+        console.error(error, message);
+      }
+    };
 
-  eventSource.onerror = (error) => {
-    console.error('EventSource failed:', error);
-  };
+    eventSource.onerror = (error) => {
+      console.error('EventSource failed:', error);
+    };
+  }
 
   _serviceSetSubscribe(service, subscribe);
 
