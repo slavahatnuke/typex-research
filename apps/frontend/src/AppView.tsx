@@ -14,7 +14,7 @@ const service = ServiceAsFetch<IApp>(serviceUrl);
 const subscribeService = SubscribeService(service);
 
 const unsubscribeService = subscribeService((message) => {
-  console.log({ message });
+  console.log(message);
 });
 
 function AppView() {

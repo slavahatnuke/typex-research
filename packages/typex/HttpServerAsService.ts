@@ -1,13 +1,18 @@
 import http from 'http';
 import { IService, IType, SubscribeService } from './index';
+import { ensureSlashAtTheEnd } from './lib/ensureSlashAtTheEnd';
 
 export function HttpServerAsService<Service extends IService<any, any, any>>(
   service: Service,
-  { apiUrl = '/' }: Partial<{ apiUrl: string }> = {},
+  {
+    apiUrl = '/',
+    serialize = (value: any): string => JSON.stringify(value),
+  }: Partial<{
+    apiUrl: string;
+    serialize: (value: any) => string;
+  }> = {},
 ) {
-  function serialize(value: any): string {
-    return JSON.stringify(value);
-  }
+  apiUrl = ensureSlashAtTheEnd(apiUrl);
 
   return http.createServer(async (req, res) => {
     // Helper function to send the response
@@ -78,6 +83,10 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
         unsubscribeService();
         res.end();
       });
+      // health
+    } else if (req.url === `${apiUrl}health`) {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('OK');
     } else {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('Not Found');

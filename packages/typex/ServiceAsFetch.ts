@@ -7,6 +7,7 @@ import {
   IType,
   NewError,
 } from './index';
+import { ensureSlashAtTheEnd } from './lib/ensureSlashAtTheEnd';
 
 enum ServiceAsFetchError {
   FetchResponseNotOk = 'FetchResponseNotOk',
@@ -30,6 +31,8 @@ export function ServiceAsFetch<
   ApiSpecification extends IType = IType,
   Context extends IType | void = void,
 >(url: string): IService<ApiSpecification, Context> {
+  url = ensureSlashAtTheEnd(url);
+
   const { publish, subscribe } =
     InMemoryBus<IServiceEvent<ApiSpecification, IEvent<any>, Context>>();
 
@@ -69,9 +72,9 @@ export function ServiceAsFetch<
       const { event, context, input } = JSON.parse(message.data);
       await publish({
         event,
-        context,
-        input
-      })
+        context: undefined as any, // should not give backend context to the client
+        input,
+      });
     } catch (error) {
       console.error(error, message);
     }
