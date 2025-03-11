@@ -1,12 +1,12 @@
 {
   "name": "@slavax/typex",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.js",
   "scripts": {
     "test": "vitest",
     "dev": "tsc --watch",
     "build": "tsc",
-    "public.publlish": "npm publish --access public",
+    "public.publish": "npm publish --access public",
     "check-types": "tsc --noEmit"
   },
   "keywords": [],
