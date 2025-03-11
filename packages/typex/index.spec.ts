@@ -14,7 +14,7 @@ import {
   SubscribeService,
 } from './index';
 import { describe, expect, it } from 'vitest';
-import { Collect } from './testing/collect';
+import { Collect } from './lib/collect';
 
 type IUserCreated = IEvent<{ type: 'UserCreated'; userId: string }>;
 
