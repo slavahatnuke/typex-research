@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DefineFlow } from './index';
-import { TestId } from './fastId';
+import { TestId } from './fun/fastId';
 
 describe(DefineFlow.name, () => {
   it('should return an array of commands, queries, events, and whens', () => {
@@ -16,6 +16,7 @@ describe(DefineFlow.name, () => {
         rejected,
         resolve,
         reject,
+        query,
       }) => {
         const createUser = command('CreateUser', 'Creates a user');
 
@@ -47,9 +48,18 @@ describe(DefineFlow.name, () => {
 
         when(resolved(createUser)).then((resolved) => {});
         when(rejected(createUser)).then((rejected) => {});
+
+        const getUser = query('GetUser', 'Get a user');
+
+        when(getUser).then(
+          resolve(getUser, (payload) => {
+            return { userId: '123' };
+          }),
+        );
       },
     );
 
+    // ---
     expect(spec).toEqual([
       {
         title: 'Creates a user',
@@ -290,6 +300,54 @@ describe(DefineFlow.name, () => {
           type: 'When',
         },
       },
+      {
+        id: '15',
+        meta: undefined,
+        name: 'GetUser',
+        title: 'Get a user',
+        type: 'Query',
+      },
+      {
+        id: '16',
+        meta: undefined,
+        subject: {
+          id: '15',
+          meta: undefined,
+          name: 'GetUser',
+          title: 'Get a user',
+          type: 'Query',
+        },
+        type: 'When',
+      },
+      {
+        id: '17',
+        meta: undefined,
+        then: {
+          handler: expect.any(Function),
+          subject: {
+            id: '15',
+            meta: undefined,
+            name: 'GetUser',
+            title: 'Get a user',
+            type: 'Query',
+          },
+          type: 'Resolve',
+        },
+        type: 'Then',
+        when: {
+          id: '16',
+          meta: undefined,
+          subject: {
+            id: '15',
+            meta: undefined,
+            name: 'GetUser',
+            title: 'Get a user',
+            type: 'Query',
+          },
+          type: 'When',
+        },
+      },
     ]);
+    // ---
   });
 });

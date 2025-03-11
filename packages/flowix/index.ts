@@ -1,7 +1,7 @@
 // specification
 
 import { IType, IUseType } from '@repo/typex';
-import { fastId } from './fastId';
+import { fastId } from './fun/fastId';
 
 export enum FlowSpec {
   Command = 'Command',
