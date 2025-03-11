@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DefineFlow } from './index';
 import { TestId } from './fun/fastId';
+import { DefineFlow } from './DefineFlow';
 
 describe(DefineFlow.name, () => {
   it('should return an array of commands, queries, events, and whens', () => {
