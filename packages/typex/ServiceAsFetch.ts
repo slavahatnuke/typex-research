@@ -54,7 +54,7 @@ export function ServiceAsFetch<
       headers: {
         'Content-Type': 'application/json',
       },
-      body: serialize({ ...input, type }),
+      body: serialize({ input: { ...input, type }, context }),
     });
 
     if (response.ok) {
@@ -85,8 +85,8 @@ export function ServiceAsFetch<
         const { event, context, input } = deserialize(message.data);
         await publish({
           event,
-          context: undefined as any, // should not give backend context to the client
-          input,
+          context,
+          input: undefined as any, // should not give backend input to the client
         });
       } catch (error) {
         console.error(error, message);

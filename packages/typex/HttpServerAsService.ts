@@ -53,12 +53,18 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
       req.on('end', async () => {
         try {
           const request = deserialize(body);
-          if (request && 'type' in request) {
-            // @ts-ignore
-            answer(await service(request.type, request));
-          } else {
-            answer({ type: 400, request });
+          if (request && 'input' in request) {
+            const input = request.input;
+            const context = 'context' in request ? request.context : undefined;
+
+            console.log('input', input, context);
+            if (input && 'type' in input) {
+              // @ts-ignore
+              answer(await service(input.type, input, context));
+              return;
+            }
           }
+          answer({ type: 400, request });
         } catch (error) {
           console.error(error);
           answer({ type: 500, reason: error });
@@ -78,11 +84,11 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
 
       const subscribeService = SubscribeService(service);
 
-      const unsubscribeService = subscribeService(
-        ({ event, context, input }) => {
-          res.write(`data: ${serialize({ event, context, input })}\n\n`);
-        },
-      );
+      const unsubscribeService = subscribeService(({ event, context }) => {
+        res.write(
+          `data: ${serialize({ event, context, input: undefined })}\n\n`,
+        );
+      });
 
       req.on('close', () => {
         unsubscribeService();

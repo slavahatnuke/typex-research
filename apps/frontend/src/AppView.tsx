@@ -9,13 +9,25 @@ import { App, IApp } from '@repo/app';
 const serviceUrl = 'http://localhost:4000/';
 
 const socket = io(serviceUrl);
-const service = ServiceAsFetch<IApp>(serviceUrl);
+type IFrontendContext = { type: 'FrontendContext'; userToken: string };
+const service = ServiceAsFetch<IApp, IFrontendContext>(serviceUrl);
 
 const subscribeService = SubscribeService(service);
 
 const unsubscribeService = subscribeService((message) => {
   console.log(message);
 });
+
+const userToken = `anonymous-id-${Math.random().toString(16).slice(2)}`;
+function FrontendContext(
+  context: Partial<IFrontendContext> = {},
+): IType<IFrontendContext> {
+  return {
+    type: 'FrontendContext',
+    userToken: userToken,
+    ...context,
+  };
+}
 
 function AppView() {
   const [message, setMessage] = useState<string>('');
@@ -50,7 +62,7 @@ function AppView() {
     (async function () {
       // send post
 
-      console.log(await service(App.Hello, {}));
+      console.log(await service(App.Hello, {}, FrontendContext()));
     })().catch((error) => console.error(error));
   }, []);
   return <div className="App">hey</div>;
