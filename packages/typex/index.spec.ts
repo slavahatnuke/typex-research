@@ -4,6 +4,7 @@ import {
   IEvent,
   IGetServiceEvents,
   IModel,
+  InMemoryBus,
   IQuery,
   IServiceEvent,
   IServiceFunctions,
@@ -41,7 +42,7 @@ const GetServiceEventsTypeTest1: IUserEvents = {
 };
 
 describe(Service.name, () => {
-  it('Service', async () => {
+  it('works', async () => {
     // helpers to emit events and call other functions in service
     const emit = EmitServiceEvent<IUserEvents>();
     const call = ServiceCall<IUserActions>();
@@ -122,6 +123,42 @@ describe(Service.name, () => {
           name: 'name',
           type: 'CreateUser',
         },
+      },
+    ]);
+  });
+});
+
+describe(InMemoryBus.name, () => {
+  it('works', async () => {
+    const bus = InMemoryBus<IUserEvents>();
+
+    const events = Collect<IUserEvents>();
+
+    const un = bus.subscribe(async (evt) => events(evt));
+
+    await bus.publish({
+      type: 'UserCreated',
+      userId: 'userId123',
+    });
+
+    expect(events()).toEqual([
+      {
+        type: 'UserCreated',
+        userId: 'userId123',
+      },
+    ]);
+
+    un();
+
+    await bus.publish({
+      type: 'UserCreated',
+      userId: 'userId345',
+    });
+
+    expect(events()).toEqual([
+      {
+        type: 'UserCreated',
+        userId: 'userId123',
       },
     ]);
   });

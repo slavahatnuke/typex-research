@@ -14,6 +14,8 @@ type IOptional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 // type IRequire<T, K extends keyof T> = Omit<Partial<T>, K> & Pick<T, K>;
 type IGetRecordValues<R extends Record<any, any>> = R[keyof R];
 
+export type IPromise<Type = unknown> = Promise<Type> | Type;
+
 // meta
 const _meta = Symbol('_meta');
 type meta = typeof _meta;
@@ -205,7 +207,7 @@ export type IServiceFunctions<
   [Type in ApiSpecification['type']]: (
     input: IGiveRequestInput<ApiSpecification, Type>,
     context: Context,
-  ) => Promise<IServiceOutput<ApiSpecification, Type>>;
+  ) => IPromise<IServiceOutput<ApiSpecification, Type>>;
 };
 
 export type IGiveRequestPayload<
@@ -475,11 +477,10 @@ export type IBus<Type extends Record<any, any>> = Readonly<{
 }>;
 
 export function InMemoryBus<Type extends Record<any, any>>(): IBus<Type> {
-  const subscribersSet = new Set<IBusSubscriber<Type>>();
-  let subscribers: IBusSubscriber<Type>[] = [];
+  const subscribers: IBusSubscriber<Type>[] = [];
 
   const publish = async (message: Type) => {
-    const promises: Promise<any>[] = [];
+    const promises: IPromise<any>[] = [];
 
     for (const subscriber of subscribers) {
       promises.push(subscriber(message));
@@ -489,12 +490,13 @@ export function InMemoryBus<Type extends Record<any, any>>(): IBus<Type> {
   };
 
   const subscribe = (subscriber: IBusSubscriber<Type>) => {
-    subscribersSet.add(subscriber);
     subscribers.push(subscriber);
 
     return () => {
-      subscribersSet.delete(subscriber);
-      subscribers = Array.from(subscribers);
+      const index = subscribers.indexOf(subscriber);
+      if (index > -1) {
+        subscribers.splice(index, 1);
+      }
     };
   };
 
