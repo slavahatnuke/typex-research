@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 
 import io from 'socket.io-client';
-import { IType } from '@repo/typex';
-import { ServiceAsFetch } from '@repo/typex/ServiceAsFetch';
+import { IType } from '@slavax/typex';
+import { ServiceAsFetch } from '@slavax/typex/ServiceAsFetch';
 import { App, IApp } from '@repo/app';
 
 const serviceUrl = 'http://localhost:4000';

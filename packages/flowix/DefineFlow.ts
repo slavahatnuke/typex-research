@@ -1,4 +1,4 @@
-import { IPromise } from '@repo/typex';
+import { IPromise } from '@slavax/typex';
 import { fastId } from './fun/fastId';
 import { FlowSpec, UseSpec } from './index';
 

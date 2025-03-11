@@ -1,4 +1,4 @@
-import { ICommand, IEvent } from '@repo/typex';
+import { ICommand, IEvent } from '@slavax/typex';
 
 export enum App {
   Hello = 'Hello',

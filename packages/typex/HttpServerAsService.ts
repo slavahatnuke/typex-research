@@ -1,8 +1,8 @@
 import http from 'http';
 import { IService, IType } from './index';
 
-export function HttpServerAsService(
-  service: IService<IType>,
+export function HttpServerAsService<Service extends IService<any, any, any>>(
+  service: Service,
   { apiUrl = '/' }: Partial<{ apiUrl: string }> = {},
 ) {
   return http.createServer(async (req, res) => {
@@ -40,6 +40,7 @@ export function HttpServerAsService(
         try {
           const request = JSON.parse(body);
           if (request && 'type' in request) {
+            // @ts-ignore
             answer(await service(request.type, request));
           } else {
             answer({ type: 400, request });

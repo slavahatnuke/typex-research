@@ -3,7 +3,7 @@ import {
   IGetServiceEvents,
   Service,
   ServiceCall,
-} from '@repo/typex';
+} from '@slavax/typex';
 import { App, IApp } from '@repo/app';
 
 export function AppService() {

@@ -1,7 +1,7 @@
 // src/server.ts
 import { Server } from 'socket.io';
 import { AppService } from './app';
-import { HttpServerAsService } from '@repo/typex/HttpServerAsService';
+import { HttpServerAsService } from '@slavax/typex/HttpServerAsService';
 import { v4 } from 'uuid';
 
 const service = AppService();

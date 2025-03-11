@@ -122,10 +122,13 @@ export type IModel<Type extends IType = IType> = IMetaType<
 >;
 // errors
 
-export type INewError<Type extends IType> = (
-  payload: Type extends IError<IType>
+export type INewErrorPayload<Type extends IType> =
+  Type extends IError<IType>
     ? IOptional<IGiveErrorPayload<Type>, 'type'>
-    : IOptional<IGiveErrorPayload<IError<Type>>, 'type'>,
+    : IOptional<Type, 'type'>;
+
+export type INewError<Type extends IType> = (
+  payload: INewErrorPayload<Type>,
 ) => IError<Type>;
 
 export function NewError<Type extends IType>(
@@ -136,10 +139,7 @@ export function NewError<Type extends IType>(
 
     readonly origin?: Error;
 
-    constructor(
-      payload: IOptional<IGiveErrorPayload<Type>, 'type'>,
-      origin?: Error,
-    ) {
+    constructor(payload: INewErrorPayload<Type>, origin?: Error) {
       super(type);
       Object.assign(this, payload);
       this.origin = origin;

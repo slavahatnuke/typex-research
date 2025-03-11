@@ -1,6 +1,6 @@
 // specification
 
-import { IPromise, IType, IUseType } from '@repo/typex';
+import { IPromise, IType, IUseType } from '@slavax/typex';
 import { IFlowIXToolkit } from './DefineFlow';
 
 export enum FlowSpec {

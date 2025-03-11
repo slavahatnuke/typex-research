@@ -5,7 +5,8 @@
   "scripts": {
     "test": "vitest",
     "dev": "tsc --watch",
-    "build": "tsc"
+    "build": "tsc",
+    "check-types": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,6 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8",
-    "@repo/typex": "*"
+    "@slavax/typex": "*"
   }
 }
