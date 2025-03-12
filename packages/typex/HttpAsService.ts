@@ -1,4 +1,5 @@
 import {
+  IContext,
   IEvent,
   IGetServiceEvents,
   IService,
@@ -30,7 +31,7 @@ export const OutputTypeNotOk = NewError<{
 
 export function HttpAsService<
   ApiSpecification extends IType,
-  Context extends IType | void = void,
+  Context extends IContext | void = void,
   Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
 >(
   url: string,
