@@ -1,0 +1,22 @@
+{
+  "name": "@slavax/funx",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest",
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "public.publish": "npm publish --access public",
+    "check-types": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
+  }
+}
