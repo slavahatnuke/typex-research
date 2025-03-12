@@ -35,10 +35,12 @@ export function HttpAsService<
 >(
   url: string,
   {
+    headers = () => ({}),
     SSE = true,
     serialize = serializeJSON,
     deserialize = deserializeJSON,
   }: Partial<{
+    headers: () => Record<string, string> | Headers;
     SSE: boolean;
     serialize: (value: any) => string;
     deserialize: (value: string) => any;
@@ -76,6 +78,7 @@ export function HttpAsService<
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...headers(),
           },
           body: serialize({ input: { ...input, type }, context }),
         });

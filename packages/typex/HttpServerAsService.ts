@@ -1,5 +1,5 @@
-import http from 'http';
-import { IService, IType, SubscribeService } from './index';
+import http, { IncomingMessage } from 'http';
+import { IPromise, IService, IType, SubscribeService } from './index';
 import { ensureSlashAtTheEnd } from './lib/ensureSlashAtTheEnd';
 import { deserializeJSON, serializeJSON } from './lib/serializeJSON';
 
@@ -10,10 +10,16 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
     SSE = true,
     serialize = serializeJSON,
     deserialize = deserializeJSON,
+    mapFrontendContextToBackend = (value) => value,
+    mapBackendContextToFronted = (value) => value,
+    authorizer = () => false,
   }: Partial<{
     apiUrl: string;
     serialize: (value: any) => string;
     deserialize: (value: string) => any;
+    mapFrontendContextToBackend: (value: any) => IPromise<any>;
+    mapBackendContextToFronted: (value: any) => IPromise<any>;
+    authorizer: (httpRequest: IncomingMessage) => IPromise<boolean>;
     SSE: boolean;
   }> = {},
 ) {
@@ -42,6 +48,12 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
       return;
     }
 
+    if (!(await authorizer(req))) {
+      res.writeHead(401, { 'Content-Type': 'text/plain' });
+      res.end('Unauthorized');
+      return;
+    }
+
     // Handle POST request at the API URL
     if (req.method === 'POST' && req.url === apiUrl) {
       let body = '';
@@ -59,7 +71,13 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
 
             if (input && 'type' in input) {
               // @ts-ignore
-              answer(await service(input.type, input, context));
+              answer(
+                await service(
+                  input.type,
+                  input,
+                  await mapFrontendContextToBackend(context),
+                ),
+              );
               return;
             }
           }
@@ -85,7 +103,7 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
 
       const unsubscribeService = subscribeService(({ event, context }) => {
         res.write(
-          `data: ${serialize({ event, context, input: undefined })}\n\n`,
+          `data: ${serialize({ event, context: mapBackendContextToFronted(context), input: undefined })}\n\n`,
         );
       });
 
