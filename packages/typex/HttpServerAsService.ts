@@ -57,7 +57,6 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
             const input = request.input;
             const context = 'context' in request ? request.context : undefined;
 
-            console.log('input', input, context);
             if (input && 'type' in input) {
               // @ts-ignore
               answer(await service(input.type, input, context));

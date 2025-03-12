@@ -288,6 +288,7 @@ type IGetServiceEventsFromActions<ApiSpecification extends IType> =
 
 export type IGetServiceEvents<ApiSpecification extends IType> =
   IGetServiceEventsFromActions<ApiSpecification>;
+
 // | IGetEventsFromSpecification<ApiSpecification>;
 
 export function ServiceFunctions<
@@ -306,14 +307,62 @@ export type IServiceEvent<
 > = {
   event: Events;
   context: Context;
-  input: ApiSpecification;
+  input?: ApiSpecification;
 };
 
 export function _serviceSetSubscribe(
-  service: IService<any, any, any>,
+  service: IServiceHandler<any, any>,
   subscribe: ISubscribeService<any, any, any>,
 ) {
   (service as any)[_subscribe] = subscribe;
+  return service;
+}
+
+// type IServiceHandler<
+//   ApiSpecification extends IType,
+//   Context extends IType | void = void,
+//   Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
+// > = Omit<IService<ApiSpecification, Context, Events>, typeof _subscribe>;
+
+type IServiceHandler<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+> = (
+  type: ApiSpecification['type'],
+  input: IServiceInput<ApiSpecification, ApiSpecification['type']>,
+  context: Context,
+) => Promise<IServiceOutput<ApiSpecification, ApiSpecification['type']>>;
+
+export function NewService<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
+>(
+  defineService: ({
+    events,
+  }: Readonly<{
+    events: IBus<IServiceEvent<ApiSpecification, Events, Context>>;
+  }>) => IServiceHandler<ApiSpecification, Context>,
+): IService<ApiSpecification, Context, Events> {
+  const events =
+    InMemoryBus<IServiceEvent<ApiSpecification, Events, Context>>();
+
+  const service = defineService({ events });
+
+  return _serviceSetSubscribe(service, events.subscribe) as IService<
+    ApiSpecification,
+    Context,
+    Events
+  >;
+}
+
+export function ServiceHandler<
+  ApiSpecification extends IType,
+  Context extends IType | void = void,
+>(
+  handler: IServiceHandler<ApiSpecification, Context>,
+): IServiceHandler<ApiSpecification, Context> {
+  return handler;
 }
 
 export function Service<
@@ -323,63 +372,63 @@ export function Service<
 >(
   functions: IServiceFunctions<ApiSpecification, Context>,
 ): IService<ApiSpecification, Context, Events> {
-  const { publish, subscribe } =
-    InMemoryBus<IServiceEvent<ApiSpecification, Events, Context>>();
+  return NewService<ApiSpecification, Context, Events>(({ events }) => {
+    const { publish } = events;
 
-  const service = (async (type, input, context) => {
-    // @ts-ignore
-    const fn = functions[type];
-    if (fn) {
-      // @ts-ignore
-      return await fn(
-        //@ts-ignore
-        {
-          ...input,
+    const serviceHandler = ServiceHandler<ApiSpecification, Context>(
+      async (type, input, context) => {
+        // @ts-ignore
+        const fn = functions[type];
+        if (fn) {
+          // @ts-ignore
+          return await fn(
+            //@ts-ignore
+            {
+              ...input,
 
-          type,
+              type,
 
-          get [_emitter]() {
-            return (async (input, eventType, event, _context) => {
-              const _input = {
-                ...input,
-              };
+              get [_emitter]() {
+                return (async (input, eventType, event, _context) => {
+                  const _input = {
+                    ...input,
+                  };
 
-              // @ts-ignore
-              _input[_caller] && delete _input[_caller];
+                  // @ts-ignore
+                  _input[_caller] && delete _input[_caller];
 
-              // @ts-ignore
-              _input[_emitter] && delete _input[_emitter];
+                  // @ts-ignore
+                  _input[_emitter] && delete _input[_emitter];
 
-              const _event = { ...event, type: eventType };
+                  const _event = { ...event, type: eventType };
 
-              await publish({
-                // @ts-ignore
-                event: _event,
-                context: _context ?? context,
-                input: _input as any,
-              });
+                  await publish({
+                    // @ts-ignore
+                    event: _event,
+                    context: _context ?? context,
+                    input: _input as any,
+                  });
 
-              return _event;
-            }) as IEmitServiceEvent<IType, Context>;
-          },
+                  return _event;
+                }) as IEmitServiceEvent<IType, Context>;
+              },
 
-          get [_caller]() {
-            return service;
-          },
-        },
-        context,
-      );
-    } else {
-      throw ServiceFunctionNotFound({
-        functionName: type,
-      });
-    }
-  }) as IService<ApiSpecification, Context, Events>;
+              get [_caller]() {
+                return serviceHandler;
+              },
+            },
+            context,
+          );
+        } else {
+          throw ServiceFunctionNotFound({
+            functionName: type,
+          });
+        }
+      },
+    );
 
-  // define subscribe
-  _serviceSetSubscribe(service, subscribe);
-
-  return service;
+    return serviceHandler;
+  });
 }
 
 // service tools
