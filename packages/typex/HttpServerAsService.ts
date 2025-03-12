@@ -48,7 +48,7 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
       return;
     }
 
-    if (!(await authorizer(req))) {
+    if (await authorizer(req)) {
       res.writeHead(401, { 'Content-Type': 'text/plain' });
       res.end('Unauthorized');
       return;
