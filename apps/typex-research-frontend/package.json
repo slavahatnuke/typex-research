@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "@typex-research/frontend",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -15,7 +15,7 @@
     "react-dom": "^19.0.0",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
-    "@repo/app": "*",
+    "@typex-reserach/app": "*",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

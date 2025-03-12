@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "@typex-reserach/backend",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -15,9 +15,8 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@repo/testing": "*",
     "@slavax/typex": "*",
-    "@repo/app": "*",
+    "@typex-reserach/app": "*",
     "@types/node": "^22.13.10",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",

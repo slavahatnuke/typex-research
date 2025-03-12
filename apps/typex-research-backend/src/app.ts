@@ -4,7 +4,7 @@ import {
   Service,
   ServiceCall,
 } from '@slavax/typex';
-import { App, IApp } from '@repo/app';
+import { App, IApp } from '@typex-reserach/app';
 
 export function AppService() {
   const emit = EmitServiceEvent<IGetServiceEvents<IApp>>();

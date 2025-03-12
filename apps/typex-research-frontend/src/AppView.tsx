@@ -3,7 +3,7 @@ import './App.css';
 
 import io from 'socket.io-client';
 import { IType, SubscribeService } from '@slavax/typex';
-import { App, IApp } from '@repo/app';
+import { App, IApp } from '@typex-reserach/app';
 import { HttpAsService } from '@slavax/typex/HttpAsService';
 
 const serviceUrl = 'http://localhost:4000/';

@@ -1,10 +1,12 @@
 {
-  "name": "@repo/app",
+  "name": "@typex-reserach/app",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "test": "vitest",
-    "dev": "tsc --watch",
+    "dev": "yarn dev.on",
+    "dev.on": "tsc --watch",
+    "dev.off": "echo 'dev.off'",
     "build": "tsc",
     "check-types": "tsc --noEmit"
   },
