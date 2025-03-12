@@ -1,11 +1,11 @@
 import {
-  _serviceSetSubscribe,
   IEvent,
-  InMemoryBus,
+  IGetServiceEvents,
   IService,
-  IServiceEvent,
   IType,
   NewError,
+  NewService,
+  ServiceHandler,
 } from './index';
 import { ensureSlashAtTheEnd } from './lib/ensureSlashAtTheEnd';
 import { deserializeJSON, serializeJSON } from './lib/serializeJSON';
@@ -29,8 +29,9 @@ export const OutputTypeNotOk = NewError<{
 }>(ServiceAsFetchError.OutputTypeNotOk);
 
 export function HttpAsService<
-  ApiSpecification extends IType = IType,
+  ApiSpecification extends IType,
   Context extends IType | void = void,
+  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
 >(
   url: string,
   {
@@ -42,63 +43,62 @@ export function HttpAsService<
     serialize: (value: any) => string;
     deserialize: (value: string) => any;
   }> = {},
-): IService<ApiSpecification, Context> {
+): IService<ApiSpecification, Context, Events> {
   url = ensureSlashAtTheEnd(url);
 
-  const { publish, subscribe } =
-    InMemoryBus<IServiceEvent<ApiSpecification, IEvent<any>, Context>>();
+  return NewService<ApiSpecification, Context, Events>(({ events }) => {
+    if (SSE) {
+      const { publish } = events;
 
-  const service = (async (type, input, context) => {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: serialize({ input: { ...input, type }, context }),
-    });
+      const eventSource = new EventSource(`${url}SSE`);
 
-    if (response.ok) {
-      const output = await response.json();
+      eventSource.onmessage = async (message) => {
+        try {
+          const { event, context, input } = deserialize(message.data);
+          await publish({
+            event,
+            context,
+            input: undefined,
+          });
+        } catch (error) {
+          console.error(error, message);
+        }
+      };
 
-      if ('type' in output && typeof output.type === 'string') {
-        return output;
-      } else {
-        throw OutputTypeNotOk({
-          request: input,
-          output: output,
-        });
-      }
-    } else {
-      throw FetchResponseNotOk({
-        status: response.status,
-        request: input,
-        response: await response.text(),
-      });
+      eventSource.onerror = (error) => {
+        console.error('EventSource failed:', error);
+      };
     }
-  }) as IService<ApiSpecification, Context>;
 
-  if (SSE) {
-    const eventSource = new EventSource(`${url}SSE`);
-
-    eventSource.onmessage = async (message) => {
-      try {
-        const { event, context, input } = deserialize(message.data);
-        await publish({
-          event,
-          context,
-          input: undefined as any, // should not give backend input to the client
+    return ServiceHandler<ApiSpecification, Context>(
+      async (type, input, context) => {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: serialize({ input: { ...input, type }, context }),
         });
-      } catch (error) {
-        console.error(error, message);
-      }
-    };
 
-    eventSource.onerror = (error) => {
-      console.error('EventSource failed:', error);
-    };
-  }
+        if (response.ok) {
+          const output = await response.json();
 
-  _serviceSetSubscribe(service, subscribe);
-
-  return service;
+          if ('type' in output && typeof output.type === 'string') {
+            return output;
+          } else {
+            throw OutputTypeNotOk({
+              request: input,
+              output: output,
+            });
+          }
+        } else {
+          throw FetchResponseNotOk({
+            status: response.status,
+            request: input,
+            response: await response.text(),
+          });
+        }
+      },
+    );
+  });
 }
