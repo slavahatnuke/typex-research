@@ -1,3 +1,1 @@
-# TypeX
-
-Helps with types for modeling.
+# PipeX
