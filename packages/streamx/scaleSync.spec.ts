@@ -1,10 +1,10 @@
 import { scaleSync } from './scaleSync';
-import { of } from './index';
 import { sequence } from './sequence';
 import { delay } from '@slavax/funx/delay';
 import { toArray } from './toArray';
 
 import { describe, expect, it } from 'vitest';
+import { of } from './of';
 
 describe(scaleSync.name, () => {
   it('scaleSync', async function () {

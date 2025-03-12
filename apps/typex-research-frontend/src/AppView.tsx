@@ -6,7 +6,6 @@ import { IType, SubscribeService } from '@slavax/typex';
 import { App, IApp } from '@typex-reserach/app';
 import { HttpAsService } from '@slavax/typex/HttpAsService';
 import { sequence } from '@slavax/streamx/sequence';
-import { of } from '@slavax/streamx';
 import { map } from '@slavax/streamx/map';
 import { tap } from '@slavax/streamx/tap';
 import { batch } from '@slavax/streamx/batch';

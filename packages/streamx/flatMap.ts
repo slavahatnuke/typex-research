@@ -1,6 +1,7 @@
 import { flat } from './flat';
 import { map } from './map';
-import { pipe, StreamXPromise, StreamXLike, StreamXMapper } from './index';
+import { StreamXPromise, StreamXLike, StreamXMapper } from './index';
+import { pipe } from './pipe';
 
 export function flatMap<Input, Output>(
   mapper: (input: Input) => StreamXPromise<Output | StreamXLike<Output>>,

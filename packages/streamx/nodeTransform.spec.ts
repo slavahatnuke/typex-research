@@ -2,9 +2,9 @@ import { nodeTransform } from './nodeTransform';
 import { Readable, Transform } from 'stream';
 import { from } from './from';
 import { toArray } from './toArray';
-import { of } from './index';
 
 import { describe, expect, it } from 'vitest';
+import { of } from './of';
 
 describe(nodeTransform.name, () => {
   it('transform in object mode', async () => {

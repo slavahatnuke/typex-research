@@ -1,10 +1,10 @@
 import { loop } from './loop';
 import { delay } from '@slavax/funx/delay';
 import { toArray } from './toArray';
-import { of } from './index';
 import { map } from './map';
 
 import { describe, expect, it } from 'vitest';
+import { of } from './of';
 
 describe(loop.name, () => {
   it('test', async function () {

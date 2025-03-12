@@ -1,9 +1,9 @@
 import { toArray } from './toArray';
 import { read, reader } from './reader';
 import { sequence } from './sequence';
-import { of } from './index';
 
 import { describe, expect, it } from 'vitest';
+import { of } from './of';
 
 describe(reader.name, () => {
   it('test', async () => {

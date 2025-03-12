@@ -1,5 +1,6 @@
-import { of, StreamXOf } from './index';
+import { StreamXOf } from './index';
 import { Readable } from 'stream';
+import { of } from './of';
 
 export function nodeReadable<Output>(
   readable: Readable,

@@ -1,9 +1,9 @@
 import { interval } from './interval';
-import { of } from './index';
 import { map } from './map';
 import { toArray } from './toArray';
 
 import { describe, expect, it } from 'vitest';
+import { of } from './of';
 
 describe(interval.name, () => {
   it('startImmediate false (by default)', async function () {

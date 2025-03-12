@@ -1,11 +1,11 @@
 import { batchTimed } from './batchTimed';
 import { sequence } from './sequence';
-import { of } from './index';
 import { tap } from './tap';
 import { delay } from '@slavax/funx/delay';
 import { toArray } from './toArray';
 
 import { describe, expect, it } from 'vitest';
+import { of } from './of';
 
 describe(batchTimed.name, () => {
   it('batched by size', async () => {

@@ -1,7 +1,8 @@
 import { Defer, IDefer } from '@slavax/funx/defer';
-import { of, StreamX } from './index';
+import { StreamX } from './index';
 import { reader } from './reader';
 import { flat } from './flat';
+import { of } from './of';
 
 export type IWriter<T> = {
   stream: StreamX<T>;

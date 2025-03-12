@@ -1,11 +1,11 @@
 import { scale } from './scale';
 import { sequence } from './sequence';
 import { delay } from '@slavax/funx/delay';
-import { of } from './index';
 import { toArray } from './toArray';
 import { tap } from './tap';
 
 import { describe, expect, it } from 'vitest';
+import { of } from './of';
 
 describe(scale.name, () => {
   it('scale', async function () {

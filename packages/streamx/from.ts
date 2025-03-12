@@ -1,8 +1,7 @@
-import { of, StreamX, StreamXLike, StreamXOf } from './index';
+import { StreamX, StreamXLike, StreamXOf } from './index';
+import { of } from './of';
 
-export function isStrictStreamLike(
-  stream: any,
-): stream is StreamXLike<any> {
+export function isStreamXLike(stream: any): stream is StreamXLike<any> {
   return (
     stream != null &&
     ((stream instanceof Object && Symbol.asyncIterator in stream) ||
@@ -10,27 +9,18 @@ export function isStrictStreamLike(
   );
 }
 
-export function toStrictStream<Input>(
-  stream: StreamXLike<Input>,
-): StreamX<Input> {
+export function toStreamX<Input>(stream: StreamXLike<Input>): StreamX<Input> {
   if (stream instanceof Object && Symbol.asyncIterator in stream) {
     return stream;
   } else if (stream instanceof Object && Symbol.iterator in stream) {
-    return {
-      [Symbol.asyncIterator]: () => {
-        const syncIterator = stream[Symbol.iterator]();
-        return {
-          next: async () => syncIterator.next(),
-        };
-      },
-    };
+    return (async function* () {
+      yield* stream;
+    })();
   } else {
     throw new Error(`${typeof stream}, is not iterable`);
   }
 }
 
-export function from<Input>(
-  streamLike: StreamXLike<Input>,
-): StreamXOf<Input> {
-  return of(toStrictStream<Input>(streamLike));
+export function from<Input>(streamLike: StreamXLike<Input>): StreamXOf<Input> {
+  return of(toStreamX<Input>(streamLike));
 }

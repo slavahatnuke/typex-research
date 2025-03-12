@@ -1,9 +1,9 @@
 import { from } from './from';
 import { toArray } from './toArray';
 import { map } from './map';
-import { pipe } from './index';
 
 import { describe, expect, it } from 'vitest';
+import { pipe } from './pipe';
 
 describe(pipe.name, () => {
   it('compose part of the stream', async () => {

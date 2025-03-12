@@ -1,10 +1,10 @@
 import { sequence } from './sequence';
-import { of } from './index';
 import { toArray } from './toArray';
 import { tap } from './tap';
 import { buffer } from './buffer';
 
 import { describe, expect, it } from 'vitest';
+import { of } from './of';
 
 describe(buffer.name, () => {
   it('buffer', async function () {

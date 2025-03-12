@@ -1,5 +1,6 @@
-import { of, StreamXMapper } from './index';
+import { StreamXMapper } from './index';
 import { Readable, ReadableOptions, Transform } from 'stream';
+import { of } from './of';
 
 export function nodeTransform<Input, Output>(
   transform: Transform,
