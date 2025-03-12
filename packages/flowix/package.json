@@ -1,10 +1,12 @@
 {
-  "name": "@repo/flowix",
+  "name": "@slavax/flowx",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "test": "vitest",
-    "dev": "tsc --watch",
+    "dev": "yarn dev.on",
+    "dev.on": "tsc --watch",
+    "dev.off": "echo 'dev.off'",
     "build": "tsc",
     "check-types": "tsc --noEmit"
   },
@@ -17,6 +19,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8",
-    "@slavax/typex": "*"
+    "@slavax/typex": "*",
+    "@slavax/funx": "*"
   }
 }

@@ -4,7 +4,9 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest",
-    "dev": "tsc --watch",
+    "dev": "yarn dev.on",
+    "dev.on": "tsc --watch",
+    "dev.off": "echo 'dev.off'",
     "build": "tsc",
     "public.publish": "npm publish --access public",
     "check-types": "tsc --noEmit"

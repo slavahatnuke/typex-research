@@ -1,6 +1,6 @@
 import { IPromise } from '@slavax/typex';
-import { fastId } from './fun/fastId';
 import { FlowSpec, UseSpec } from './index';
+import { fastId, INewId } from '@slavax/funx/fastId';
 
 export type IFlowIXToolkit = {
   emit: (event: UseSpec<FlowSpec.Event>, payload: unknown) => IPromise;
@@ -77,7 +77,7 @@ export type IDefineFlow = (
 
 export function DefineFlow<Meta = undefined>(
   meta: Meta,
-  { NewId = fastId }: Partial<{ NewId: () => string }> = {},
+  { NewId = fastId }: Partial<{ NewId: INewId }> = {},
 ): IDefineFlow {
   return function defineFlow(
     specifier: (language: IFlowDefinitionLanguage) => unknown,
@@ -89,7 +89,7 @@ export function DefineFlow<Meta = undefined>(
     ): Type & IFlowDefinitionMeta => {
       const item = {
         ...output,
-        id: NewId(),
+        id: String(NewId()),
         meta,
       };
       outputs.push(item);
