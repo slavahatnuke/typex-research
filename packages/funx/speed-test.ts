@@ -1,20 +1,40 @@
-function uiTime(startedAt: number) {
-  return new Date(startedAt).toISOString();
+function uiTime(date: Date | null) {
+  if (date instanceof Date) {
+    return date.toISOString();
+  } else {
+    return 'N/A';
+  }
 }
+
+type IReport = {
+  elapsedMilliseconds: number | null;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  trackedAt: Date | null;
+  RPM: number | null;
+  RPS: number | null;
+  textReport: string;
+};
 
 export function SpeedTest({
   name = '',
   every = 1000,
-}: Partial<{ name: string; every: number | null }> = {}) {
+  inIntervalMilliseconds = 15000,
+  publishReport = (report: IReport) => console.log(report.textReport),
+}: Partial<{
+  name: string;
+  every: number | null;
+  inIntervalMilliseconds: number | null;
+  publishReport: (report: IReport) => unknown;
+}> = {}) {
   let counter = 0;
-  let startedAt: number | null = null;
-  let trackedAt: number | null = null;
+  let startedAt: Date | null = null;
+  let trackedAt: Date | null = null;
+  let reportedAt: Date | null = null;
 
-  const log = (text: string) => console.log(text);
-
-  function textReport(finishedAt: number | null = null) {
-    const started = startedAt ? uiTime(startedAt) : null;
-    const elapsed = startedAt && trackedAt ? trackedAt - startedAt : null;
+  function createReport(finishedAt: Date | null = null): IReport {
+    const elapsed =
+      startedAt && trackedAt ? trackedAt.getTime() - startedAt.getTime() : null;
 
     const RPM =
       counter && elapsed ? Math.round(counter / (elapsed / 60_000)) : null;
@@ -22,37 +42,50 @@ export function SpeedTest({
     const RPS =
       counter && elapsed ? Math.round(counter / (elapsed / 1000)) : null;
 
-    const finished = finishedAt ? uiTime(finishedAt) : null;
-    const tracked = trackedAt ? uiTime(trackedAt) : null;
-
     const named = `${name ? `SpeedTest: ${name}; ` : ''}`;
 
-    return `${named}RPS: ${RPS ?? 'N/A'}; RPM: ${RPM ?? 'N/A'}; Counter: ${counter ?? 'N/A'}; Started: ${started ?? 'N/A'}; Elapsed: ${elapsed ?? 'N/A'}; Tracked: ${tracked ?? 'N/A'}; Finished: ${finished ?? 'N/A'}`;
+    reportedAt = new Date();
+
+    return {
+      elapsedMilliseconds: elapsed,
+      startedAt: startedAt,
+      finishedAt: finishedAt,
+      trackedAt: trackedAt,
+      RPM,
+      RPS,
+      textReport: `${named}RPS: ${RPS ?? 'N/A'}; RPM: ${RPM ?? 'N/A'}; Counter: ${counter ?? 'N/A'}; Started: ${uiTime(startedAt)}; Elapsed: ${elapsed ?? 'N/A'}; Tracked: ${uiTime(trackedAt)}; Finished: ${uiTime(finishedAt)}`,
+    };
   }
 
-  const speedTest = {
+  return {
     track: (n: number = 1) => {
       if (!startedAt) {
-        startedAt = Date.now();
+        startedAt = new Date();
       }
 
-      trackedAt = Date.now();
+      trackedAt = new Date();
 
       counter += n;
 
       if (every !== null) {
         if (counter % every === 0) {
-          log(textReport());
+          publishReport(createReport(null));
+        }
+      }
+
+      if (inIntervalMilliseconds !== null && reportedAt) {
+        const lastTimeReportedInMS =
+          new Date().getTime() - reportedAt.getTime();
+        if (lastTimeReportedInMS > inIntervalMilliseconds) {
+          publishReport(createReport(null));
         }
       }
     },
     report: () => {
-      log(textReport(Date.now()));
+      publishReport(createReport(new Date()));
     },
     toString: () => {
-      return textReport(Date.now());
+      return createReport(new Date());
     },
   };
-
-  return speedTest;
 }

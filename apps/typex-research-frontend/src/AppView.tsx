@@ -9,9 +9,12 @@ import { sequence } from '@slavax/streamx/sequence';
 import { map } from '@slavax/streamx/map';
 import { tap } from '@slavax/streamx/tap';
 import { batch } from '@slavax/streamx/batch';
-import { flatMap } from '@slavax/streamx/flatMap';
 import { flat } from '@slavax/streamx/flat';
 import { run } from '@slavax/streamx/run';
+import { of } from '@slavax/streamx/of';
+import { SpeedTest } from '@slavax/funx/speed-test';
+import { relaxedTimeout } from '@slavax/streamx/relaxedTimeout';
+import { relaxedBatch } from '@slavax/streamx/relaxedBatch';
 
 const serviceUrl = 'http://localhost:4000/';
 
@@ -62,11 +65,15 @@ function AppView() {
     sendMessage({ type: 'Hello IO' });
 
     void (async function () {
-      const stream = of(sequence(10))
+      const speedTest = SpeedTest({
+        every: 1000,
+      });
+
+      const stream = of(sequence(5_000))
         .pipe(map((input) => `Hello number: ${input}`))
-        .pipe(batch(3))
-        .pipe(flat())
-        .pipe(tap(console.log));
+        .pipe(relaxedBatch(1000))
+        .pipe(tap(() => speedTest.track()));
+      // .pipe(tap(console.log));
 
       await run(stream);
     })();
