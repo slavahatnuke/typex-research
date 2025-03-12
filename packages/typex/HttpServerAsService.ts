@@ -91,6 +91,7 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
 
       req.on('close', () => {
         unsubscribeService();
+        console.log('Connection closed, service unsubscribed');
         res.end();
       });
       // health
