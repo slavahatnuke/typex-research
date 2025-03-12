@@ -179,7 +179,9 @@ type IGiveErrorPayload<
 
 const _subscribe = Symbol('_subscribe');
 
-export type IContext<T extends Record<any, any> = Record<any, any>> = Readonly<T>;
+export type IContext<T extends Record<any, any> = Record<any, any>> =
+  Readonly<T>;
+
 export type IService<
   ApiSpecification extends IType,
   Context extends IContext | void = void,
@@ -197,7 +199,7 @@ export type ISubscribeService<
   ApiSpecification extends IType,
   Context extends IContext | void = void,
   Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
-> = IBus<IServiceEvent<ApiSpecification, Events, Context>>['subscribe'];
+> = IBus<IServiceEvent<ApiSpecification, Context, Events>>['subscribe'];
 
 export function SubscribeService<
   ApiSpecification extends IType,
@@ -209,13 +211,9 @@ export function SubscribeService<
   return service[_subscribe];
 }
 
-export type IServiceFunctions<
-  ApiSpecification extends IType,
-  Context extends IContext | void = void,
-> = {
+export type IServiceFunctions<ApiSpecification extends IType> = {
   [Type in ApiSpecification['type']]: (
     input: IGiveRequestInput<ApiSpecification, Type>,
-    context: Context,
   ) => IPromise<IServiceOutput<ApiSpecification, Type>>;
 };
 
@@ -257,26 +255,12 @@ type IServiceOutput<
 
 const _emitter = Symbol('_emitter');
 const _caller = Symbol('_caller');
+const _context = Symbol('_context');
 
 type IGetEventsFromAction<Action extends IType> =
   IGetMetaInfo<Action, Payload.Events> extends IEventsPayload<IType>
     ? IGetMetaInfo<Action, Payload.Events>['events']
     : never;
-//
-// export type IGetEventsFromSpecification<ApiSpecification extends IType> =
-//   IGetRecordValues<
-//     Readonly<{
-//       [Type in ApiSpecification['type']]: IGetMetaInfo<
-//         IUseType<ApiSpecification, Type>,
-//         Payload.EventPayload
-//       > extends IEventPayload<IType>
-//         ? IGetMetaInfo<
-//             IUseType<ApiSpecification, Type>,
-//             Payload.EventPayload
-//           >['payload']
-//         : never;
-//     }>
-//   >;
 
 type IGetServiceEventsFromActions<ApiSpecification extends IType> =
   IGetRecordValues<
@@ -292,19 +276,16 @@ export type IGetServiceEvents<ApiSpecification extends IType> =
 
 // | IGetEventsFromSpecification<ApiSpecification>;
 
-export function ServiceFunctions<
-  ApiSpecification extends IType,
-  Context extends IContext | void = void,
->(
-  input: IServiceFunctions<ApiSpecification, Context>,
-): IServiceFunctions<ApiSpecification, Context> {
+export function ServiceFunctions<ApiSpecification extends IType>(
+  input: IServiceFunctions<ApiSpecification>,
+): IServiceFunctions<ApiSpecification> {
   return input;
 }
 
 export type IServiceEvent<
   ApiSpecification extends IType,
-  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
   Context extends IContext | void = void,
+  Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
 > = {
   event: Events;
   context: Context;
@@ -318,12 +299,6 @@ export function _serviceSetSubscribe(
   (service as any)[_subscribe] = subscribe;
   return service;
 }
-
-// type IServiceHandler<
-//   ApiSpecification extends IType,
-//   Context extends IContext | void = void,
-//   Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
-// > = Omit<IService<ApiSpecification, Context, Events>, typeof _subscribe>;
 
 type IServiceHandler<
   ApiSpecification extends IType,
@@ -342,11 +317,11 @@ export function NewService<
   defineService: ({
     events,
   }: Readonly<{
-    events: IBus<IServiceEvent<ApiSpecification, Events, Context>>;
+    events: IBus<IServiceEvent<ApiSpecification, Context, Events>>;
   }>) => IServiceHandler<ApiSpecification, Context>,
 ): IService<ApiSpecification, Context, Events> {
   const events =
-    InMemoryBus<IServiceEvent<ApiSpecification, Events, Context>>();
+    InMemoryBus<IServiceEvent<ApiSpecification, Context, Events>>();
 
   const service = defineService({ events });
 
@@ -366,12 +341,29 @@ export function ServiceHandler<
   return handler;
 }
 
+export function _cleanServiceInput<Type extends Record<any, any>>(
+  input: Type,
+): Omit<Type, typeof _caller | typeof _emitter> {
+  const _input = { ...input };
+
+  // @ts-ignore
+  _input[_caller] && delete _input[_caller];
+
+  // @ts-ignore
+  _input[_emitter] && delete _input[_emitter];
+
+  // @ts-ignore
+  _input[_context] && delete _input[_context];
+
+  return _input;
+}
+
 export function Service<
   ApiSpecification extends IType,
   Context extends IContext | void = void,
   Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
 >(
-  functions: IServiceFunctions<ApiSpecification, Context>,
+  functions: IServiceFunctions<ApiSpecification>,
 ): IService<ApiSpecification, Context, Events> {
   return NewService<ApiSpecification, Context, Events>(({ events }) => {
     const { publish } = events;
@@ -390,35 +382,38 @@ export function Service<
               type,
 
               get [_emitter]() {
-                return (async (input, eventType, event, _context) => {
-                  const _input = {
-                    ...input,
-                  };
-
-                  // @ts-ignore
-                  _input[_caller] && delete _input[_caller];
-
-                  // @ts-ignore
-                  _input[_emitter] && delete _input[_emitter];
-
+                return async (eventType: string, event: IEvent<any>) => {
                   const _event = { ...event, type: eventType };
 
                   await publish({
                     // @ts-ignore
                     event: _event,
-                    context: _context ?? context,
-                    input: _input as any,
+                    context: context,
+                    // @ts-ignore
+                    input: _cleanServiceInput({...input, type}),
                   });
 
                   return _event;
-                }) as IEmitServiceEvent<IType, Context>;
+                };
               },
 
               get [_caller]() {
-                return serviceHandler;
+                return async (inputType: string, input: IType) =>
+                  await serviceHandler(
+                    inputType,
+                    // @ts-ignore
+                    {
+                      ...input,
+                      type: inputType,
+                    },
+                    context,
+                  );
+              },
+
+              get [_context]() {
+                return context;
               },
             },
-            context,
           );
         } else {
           throw ServiceFunctionNotFound({
@@ -435,64 +430,66 @@ export function Service<
 // service tools
 type IBase = ICommand<any> | IQuery<any, any> | IEvent<any>;
 
-export type IEmitServiceEvent<
-  Events extends IType,
-  Context extends IContext | void = void,
-> = <EventType extends Events['type']>(
+export type IEmitServiceEvent<Events extends IType> = <
+  EventType extends Events['type'],
+>(
   base: IBase,
   eventType: EventType,
   event: IOptional<IUseType<IMetaFreeObject<Events>, EventType>, 'type'>,
-  context?: Context,
 ) => Promise<IUseType<IMetaFreeObject<Events>, EventType>>;
 
 export function EmitServiceEvent<
   Events extends IType,
-  Context extends IContext | void = void,
->(): IEmitServiceEvent<Events, Context> {
-  return async (base, eventType, event, context) => {
+>(): IEmitServiceEvent<Events> {
+  return async (base, eventType, event) => {
     // @ts-ignore
     const emitter = base[_emitter];
 
     if (emitter) {
       // @ts-ignore
-      return await emitter(base, eventType, event, context);
+      return await emitter(eventType, event);
     } else {
       throw ServiceEventEmitterNotFound({
         base,
         event,
-        context,
       });
     }
   };
 }
 
-export type IServiceCall<
-  ApiSpecification extends IType,
-  Context extends IContext | void = void,
-> = <InputType extends ApiSpecification['type']>(
+export function GetServiceContext<Context extends IContext | void = void>(): <
+  Type extends IType,
+>(
+  base: Type,
+) => Context {
+  return (base) => {
+    // @ts-ignore
+    return base[_context] ?? undefined;
+  };
+}
+
+export type IServiceCall<ApiSpecification extends IType> = <
+  InputType extends ApiSpecification['type'],
+>(
   base: IBase,
   inputType: InputType,
   input: IServiceInput<ApiSpecification, InputType>,
-  context?: Context,
 ) => Promise<IServiceOutput<ApiSpecification, InputType>>;
 
 export function ServiceCall<
   ApiSpecification extends IType,
-  Context extends IContext | void = void,
->(): IServiceCall<ApiSpecification, Context> {
-  return async (base, inputType, input, context) => {
+>(): IServiceCall<ApiSpecification> {
+  return async (base, inputType, input) => {
     // @ts-ignore
     const caller = base[_caller];
 
     if (caller) {
-      // @ts-ignore
-      return await caller(inputType, input, context);
+      return await caller(inputType, input);
     } else {
       throw ServiceCallerNotFound({
         base,
         inputType,
         input,
-        context,
       });
     }
   };
@@ -515,7 +512,6 @@ export type IServiceCallerNotFound = IError<{
   inputType: string;
   base: IType | any;
   input: IType | any;
-  context: IType | any;
 }>;
 
 export const ServiceFunctionNotFound = NewError<IServiceError>(
@@ -530,7 +526,6 @@ export type IServiceEventEmitterNotFound = IError<{
   type: ServiceError.ServiceEventEmitterNotFound;
   base: IType | Record<any, any>;
   event: IType | Record<any, any>;
-  context: IType | any;
 }>;
 
 export const ServiceEventEmitterNotFound =

@@ -11,7 +11,7 @@ export function AppService() {
   const call = ServiceCall<IApp>();
 
   return Service<IApp>({
-    [App.Hello]: async (input, context) => {
+    [App.Hello]: async (input) => {
       return await emit(input, App.SaidHello, {
         type: App.SaidHello,
       });
