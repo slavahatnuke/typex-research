@@ -1,5 +1,5 @@
 {
-  "name": "@slavax/pipex",
+  "name": "@slavax/streamx",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
