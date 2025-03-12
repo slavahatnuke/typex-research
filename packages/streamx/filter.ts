@@ -1,7 +1,7 @@
-import { StreamXPromised, StreamX, StreamXMapper } from './index';
+import { StreamXPromise, StreamX, StreamXMapper } from './index';
 
 export function filter<Input>(
-  condition: (input: Input) => StreamXPromised<boolean | undefined | null>,
+  condition: (input: Input) => StreamXPromise<boolean | undefined | null>,
 ): StreamXMapper<Input, Input> {
   return (inputStream) =>
     (async function* filtered(): StreamX<Input> {

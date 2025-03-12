@@ -1,8 +1,8 @@
 import { map } from './map';
-import { StreamXPromised, StreamXMapper } from './index';
+import { StreamXPromise, StreamXMapper } from './index';
 
 export function tap<Input>(
-  fn: (input: Input) => StreamXPromised<any>,
+  fn: (input: Input) => StreamXPromise<any>,
 ): StreamXMapper<Input, Input> {
   return map<Input, Input>(async (input): Promise<Input> => {
     await fn(input);

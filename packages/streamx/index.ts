@@ -7,13 +7,17 @@ export type StreamXOf<Input> = StreamX<Input> &
     pipe<Output>(mapper: StreamXMapper<Input, Output>): StreamXOf<Output>;
   }>;
 
-export type StreamXLike<Type> = AsyncIterable<Type> | Iterable<Type> | Type[];
+export type StreamXLike<Type> =
+  | AsyncIterable<Type>
+  | Iterable<Type>
+  | Type[]
+  | ReadonlyArray<Type>;
 
 export type StreamXMapper<Input, Output> = (
   stream: StreamX<Input>,
 ) => StreamX<Output>;
 
-export type StreamXPromised<Type> = Type | Promise<Type>;
+export type StreamXPromise<Type> = Type | Promise<Type>;
 
 export type StreamXPiper<In, Out> = StreamXMapper<In, Out> & {
   pipe<Output>(mapper: StreamXMapper<Out, Output>): StreamXPiper<In, Output>;
@@ -43,15 +47,4 @@ export function pipe<In, Out>(
     });
   };
   return streamMapper as StreamXPiper<In, Out>;
-}
-
-export async function run<Type, Default = undefined>(
-  stream: StreamX<Type>,
-  defaultValue = undefined as Default,
-): Promise<Type | Default> {
-  let value: Type | Default = defaultValue;
-  for await (const record of stream) {
-    value = record;
-  }
-  return value;
 }

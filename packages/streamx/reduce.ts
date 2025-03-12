@@ -1,7 +1,7 @@
-import { StreamXPromised, StreamX, StreamXMapper } from './index';
+import { StreamXPromise, StreamX, StreamXMapper } from './index';
 
 export function reduce<Input, Accumulator>(
-  reducer: (accumulator: Accumulator, input: Input) => StreamXPromised<Accumulator>,
+  reducer: (accumulator: Accumulator, input: Input) => StreamXPromise<Accumulator>,
   initial: Accumulator,
 ): StreamXMapper<Input, Accumulator> {
   return (inputStream) =>

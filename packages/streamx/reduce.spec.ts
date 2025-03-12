@@ -1,9 +1,9 @@
 import { from } from './from';
 import { toArray } from './toArray';
 import { reduce } from './reduce';
-import { run } from './index';
 
 import { describe, expect, it } from 'vitest';
+import { run } from './run';
 
 describe(reduce.name, () => {
   it('reduce values as stream output', async () => {

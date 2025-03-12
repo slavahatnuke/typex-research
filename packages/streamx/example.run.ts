@@ -3,8 +3,9 @@ import { map } from './map';
 import { tap } from './tap';
 import { batch } from './batch';
 import { flat } from './flat';
-import { pipe, run } from './index';
+import { pipe } from './index';
 import { from } from './from';
+import { run } from './run';
 
 export async function exampleRun() {
   let idx = 0;

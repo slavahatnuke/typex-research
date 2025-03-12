@@ -1,7 +1,7 @@
 import { from } from './from';
-import { run } from './index';
 
 import { describe, expect, it } from 'vitest';
+import { run } from './run';
 
 describe(run.name, () => {
   it('returns last value', async () => {

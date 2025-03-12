@@ -5,11 +5,23 @@ import io from 'socket.io-client';
 import { IType, SubscribeService } from '@slavax/typex';
 import { App, IApp } from '@typex-reserach/app';
 import { HttpAsService } from '@slavax/typex/HttpAsService';
+import { sequence } from '@slavax/streamx/sequence';
+import { of } from '@slavax/streamx';
+import { map } from '@slavax/streamx/map';
+import { tap } from '@slavax/streamx/tap';
+import { batch } from '@slavax/streamx/batch';
+import { flatMap } from '@slavax/streamx/flatMap';
+import { flat } from '@slavax/streamx/flat';
+import { run } from '@slavax/streamx/run';
 
 const serviceUrl = 'http://localhost:4000/';
 
 const socket = io(serviceUrl);
-type IFrontendContext = { type: 'FrontendContext'; userToken: string, traceId: string };
+type IFrontendContext = {
+  type: 'FrontendContext';
+  userToken: string;
+  traceId: string;
+};
 const service = HttpAsService<IApp, IFrontendContext>(serviceUrl);
 
 const subscribeService = SubscribeService(service);
@@ -20,7 +32,8 @@ const unsubscribeService = subscribeService((message) => {
 
 const shortId = () => Math.random().toString(16).slice(2);
 
-const userToken = `user-token-${(shortId())}`;
+const userToken = `user-token-${shortId()}`;
+
 function FrontendContext(
   context: Partial<IFrontendContext> = {},
 ): IType<IFrontendContext> {
@@ -48,6 +61,16 @@ function AppView() {
     });
 
     sendMessage({ type: 'Hello IO' });
+
+    void (async function () {
+      const stream = of(sequence(10))
+        .pipe(map((input) => `Hello number: ${input}`))
+        .pipe(batch(3))
+        .pipe(flat())
+        .pipe(tap(console.log));
+
+      await run(stream);
+    })();
 
     // Cleanup the socket connection when the component unmounts
     return () => {

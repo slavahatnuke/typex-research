@@ -1,8 +1,8 @@
-import { StreamXPromised, StreamX } from './index';
+import { StreamXPromise, StreamX } from './index';
 
 const DONE = Symbol('DONE');
 
-export type IRead<T> = () => StreamXPromised<T | typeof DONE>;
+export type IRead<T> = () => StreamXPromise<T | typeof DONE>;
 
 export function reader<T>(read: IRead<T>): StreamX<T> {
   return {

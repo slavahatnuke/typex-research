@@ -1,7 +1,7 @@
-import { StreamXPromised, StreamX, StreamXMapper } from './index';
+import { StreamXPromise, StreamX, StreamXMapper } from './index';
 
 export function map<Input, Output>(
-  mapper: (input: Input) => StreamXPromised<Output>,
+  mapper: (input: Input) => StreamXPromise<Output>,
 ): StreamXMapper<Input, Output> {
   return (inputStream) =>
     (async function* mappedStream(): StreamX<Output> {
