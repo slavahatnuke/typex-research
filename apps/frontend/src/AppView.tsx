@@ -3,14 +3,14 @@ import './App.css';
 
 import io from 'socket.io-client';
 import { IType, SubscribeService } from '@slavax/typex';
-import { ServiceAsFetch } from '@slavax/typex/ServiceAsFetch';
 import { App, IApp } from '@repo/app';
+import { HttpAsService } from '@slavax/typex/HttpAsService';
 
 const serviceUrl = 'http://localhost:4000/';
 
 const socket = io(serviceUrl);
 type IFrontendContext = { type: 'FrontendContext'; userToken: string, traceId: string };
-const service = ServiceAsFetch<IApp, IFrontendContext>(serviceUrl);
+const service = HttpAsService<IApp, IFrontendContext>(serviceUrl);
 
 const subscribeService = SubscribeService(service);
 

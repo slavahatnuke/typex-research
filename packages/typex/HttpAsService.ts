@@ -28,7 +28,7 @@ export const OutputTypeNotOk = NewError<{
   output: any;
 }>(ServiceAsFetchError.OutputTypeNotOk);
 
-export function ServiceAsFetch<
+export function HttpAsService<
   ApiSpecification extends IType = IType,
   Context extends IType | void = void,
 >(

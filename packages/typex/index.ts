@@ -21,14 +21,21 @@ const _meta = Symbol('_meta');
 type meta = typeof _meta;
 
 export type IMetaObject<MetaInfo = unknown> = Readonly<{ [_meta]?: MetaInfo }>;
-export type IGetMeta<Type extends IType> = Type extends IMetaObject
-  ? Type[meta]
-  : never;
+
+export type IGetMetaFromObject<Object extends IType> =
+  Object extends IMetaObject ? Exclude<Object[meta], undefined> : never;
+
 export type IMetaType<Type extends IType, MetaInfo = unknown> = IType<
-  Type & IMetaObject<IGetMeta<Type> | MetaInfo>
+  Type & IMetaObject<IGetMetaFromObject<Type> | MetaInfo>
 >;
-export type IMetaFree<Type extends IType | void | unknown | never> =
-  Type extends IType ? IType<Omit<Type, meta>> : never;
+
+export type IGetMetaInfo<Object extends IType, Type extends string> = IUseType<
+  IGetMetaFromObject<Object>,
+  Type
+>;
+
+export type IMetaFreeObject<Object extends IType | void | unknown | never> =
+  Object extends IType ? IType<Omit<Object, meta>> : never;
 
 // actions
 enum Action {
@@ -51,9 +58,10 @@ enum Payload {
   ErrorPayload = 'ErrorPayload',
 }
 
+// meta tags
 type IRequestPayload<Request extends IType> = IType<{
   type: Payload.Request;
-  request: IMetaFree<Request>;
+  request: IMetaFreeObject<Request>;
 }>;
 type IResponsePayload<Response extends IType | void = void> = IType<{
   type: Payload.Response;
@@ -61,7 +69,7 @@ type IResponsePayload<Response extends IType | void = void> = IType<{
 }>;
 type IEventsPayload<Events extends IType | void = void> = IType<{
   type: Payload.Events;
-  events: IMetaFree<Events>;
+  events: IMetaFreeObject<Events>;
 }>;
 type IActionType<Type extends Action> = IType<{
   type: Type;
@@ -120,8 +128,8 @@ export type IModel<Type extends IType = IType> = IMetaType<
     }>
   | IType<{ type: Payload.ModelPayload; payload: Type }>
 >;
-// errors
 
+// errors
 export type INewErrorPayload<Type extends IType> =
   Type extends IError<IType>
     ? IOptional<IGiveErrorPayload<Type>, 'type'>
@@ -161,8 +169,8 @@ export function NewError<Type extends IType>(
 
 type IGiveErrorPayload<
   Input extends IType,
-  X extends IUseType<IGetMeta<Input>, Payload.ErrorPayload> = IUseType<
-    IGetMeta<Input>,
+  X extends IGetMetaInfo<Input, Payload.ErrorPayload> = IGetMetaInfo<
+    Input,
     Payload.ErrorPayload
   >,
 > = X extends IErrorPayload<IType> ? X['payload'] : never;
@@ -212,16 +220,16 @@ export type IServiceFunctions<
 
 export type IGiveRequestPayload<
   Input extends IType,
-  X extends IUseType<IGetMeta<Input>, Payload.Request> = IUseType<
-    IGetMeta<Input>,
+  X extends IUseType<IGetMetaFromObject<Input>, Payload.Request> = IUseType<
+    IGetMetaFromObject<Input>,
     Payload.Request
   >,
 > = X extends IRequestPayload<IType> ? X['request'] : never;
 
 export type IGiveResponsePayload<
   Input extends IType,
-  X extends IUseType<IGetMeta<Input>, Payload.Response> = IUseType<
-    IGetMeta<Input>,
+  X extends IGetMetaInfo<Input, Payload.Response> = IGetMetaInfo<
+    Input,
     Payload.Response
   >,
 > = X extends IResponsePayload<IType> ? X['response'] : void;
@@ -249,15 +257,25 @@ type IServiceOutput<
 const _emitter = Symbol('_emitter');
 const _caller = Symbol('_caller');
 
-type IGiveEventsPayloadOfAction<Action extends IType> = IUseType<
-  IGetMeta<Action>,
-  Payload.Events
->;
-
 type IGetEventsFromAction<Action extends IType> =
-  IGiveEventsPayloadOfAction<Action> extends IEventsPayload<IType>
-    ? IGiveEventsPayloadOfAction<Action>['events']
+  IGetMetaInfo<Action, Payload.Events> extends IEventsPayload<IType>
+    ? IGetMetaInfo<Action, Payload.Events>['events']
     : never;
+//
+// export type IGetEventsFromSpecification<ApiSpecification extends IType> =
+//   IGetRecordValues<
+//     Readonly<{
+//       [Type in ApiSpecification['type']]: IGetMetaInfo<
+//         IUseType<ApiSpecification, Type>,
+//         Payload.EventPayload
+//       > extends IEventPayload<IType>
+//         ? IGetMetaInfo<
+//             IUseType<ApiSpecification, Type>,
+//             Payload.EventPayload
+//           >['payload']
+//         : never;
+//     }>
+//   >;
 
 type IGetServiceEventsFromActions<ApiSpecification extends IType> =
   IGetRecordValues<
@@ -270,6 +288,7 @@ type IGetServiceEventsFromActions<ApiSpecification extends IType> =
 
 export type IGetServiceEvents<ApiSpecification extends IType> =
   IGetServiceEventsFromActions<ApiSpecification>;
+// | IGetEventsFromSpecification<ApiSpecification>;
 
 export function ServiceFunctions<
   ApiSpecification extends IType,
@@ -372,9 +391,9 @@ export type IEmitServiceEvent<
 > = <EventType extends Events['type']>(
   base: IBase,
   eventType: EventType,
-  event: IOptional<IUseType<IMetaFree<Events>, EventType>, 'type'>,
+  event: IOptional<IUseType<IMetaFreeObject<Events>, EventType>, 'type'>,
   context?: Context,
-) => Promise<IUseType<IMetaFree<Events>, EventType>>;
+) => Promise<IUseType<IMetaFreeObject<Events>, EventType>>;
 
 export function EmitServiceEvent<
   Events extends IType,
