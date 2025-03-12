@@ -1,11 +1,11 @@
-import { Promised, StrictStream, StrictStreamMapper } from './index';
+import { StreamXPromised, StreamX, StreamXMapper } from './index';
 
 export function reduce<Input, Accumulator>(
-  reducer: (accumulator: Accumulator, input: Input) => Promised<Accumulator>,
+  reducer: (accumulator: Accumulator, input: Input) => StreamXPromised<Accumulator>,
   initial: Accumulator,
-): StrictStreamMapper<Input, Accumulator> {
+): StreamXMapper<Input, Accumulator> {
   return (inputStream) =>
-    (async function* reduced(): StrictStream<Accumulator> {
+    (async function* reduced(): StreamX<Accumulator> {
       let finalValue: Accumulator = initial;
       for await (const input of inputStream) {
         finalValue = await reducer(finalValue, input);

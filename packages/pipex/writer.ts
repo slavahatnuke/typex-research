@@ -1,10 +1,10 @@
 import { Defer, IDefer } from '@slavax/funx/defer';
-import { of, StrictStream } from './index';
+import { of, StreamX } from './index';
 import { reader } from './reader';
 import { flat } from './flat';
 
 export type IWriter<T> = {
-  stream: StrictStream<T>;
+  stream: StreamX<T>;
   write: (data: T) => Promise<void>;
   finish: () => Promise<void>;
   length(): number;

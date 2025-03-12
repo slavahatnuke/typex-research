@@ -1,4 +1,4 @@
-import { StrictStreamMapper } from './index';
+import { StreamXMapper } from './index';
 import { IRead, read } from './reader';
 import { IWriter, Writer } from './writer';
 import { syncTick } from '@slavax/funx/tick';
@@ -9,7 +9,7 @@ type Milliseconds = number;
 export function batchTimed<Input>(
   size: number,
   maxTimeout: Milliseconds,
-): StrictStreamMapper<Input, Input[]> {
+): StreamXMapper<Input, Input[]> {
   let outputBuffer: IWriter<Input[]>;
   let readInput: IRead<Input>;
   let readOutput: IRead<Input[]>;

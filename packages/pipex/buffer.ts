@@ -1,9 +1,9 @@
-import { StrictStream, StrictStreamMapper } from './index';
+import { StreamX, StreamXMapper } from './index';
 import { IRead, read } from './reader';
 import { IWriter, Writer } from './writer';
 import { syncTick } from '@slavax/funx/tick';
 
-export function buffer<Input>(size: number): StrictStreamMapper<Input, Input> {
+export function buffer<Input>(size: number): StreamXMapper<Input, Input> {
   let outputBuffer: IWriter<Input>;
   let readInput: IRead<Input>;
   let readOutput: IRead<Input>;
@@ -15,7 +15,7 @@ export function buffer<Input>(size: number): StrictStreamMapper<Input, Input> {
     }
   }
 
-  return (inputStream: StrictStream<Input>) => {
+  return (inputStream: StreamX<Input>) => {
     return {
       [Symbol.asyncIterator](): AsyncIterator<Input> {
         return {

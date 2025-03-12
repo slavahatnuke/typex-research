@@ -1,8 +1,8 @@
-import { of, StrictStream, StrictStreamLike, StrictStreamOf } from './index';
+import { of, StreamX, StreamXLike, StreamXOf } from './index';
 
 export function isStrictStreamLike(
   stream: any,
-): stream is StrictStreamLike<any> {
+): stream is StreamXLike<any> {
   return (
     stream != null &&
     ((stream instanceof Object && Symbol.asyncIterator in stream) ||
@@ -11,8 +11,8 @@ export function isStrictStreamLike(
 }
 
 export function toStrictStream<Input>(
-  stream: StrictStreamLike<Input>,
-): StrictStream<Input> {
+  stream: StreamXLike<Input>,
+): StreamX<Input> {
   if (stream instanceof Object && Symbol.asyncIterator in stream) {
     return stream;
   } else if (stream instanceof Object && Symbol.iterator in stream) {
@@ -30,7 +30,7 @@ export function toStrictStream<Input>(
 }
 
 export function from<Input>(
-  streamLike: StrictStreamLike<Input>,
-): StrictStreamOf<Input> {
+  streamLike: StreamXLike<Input>,
+): StreamXOf<Input> {
   return of(toStrictStream<Input>(streamLike));
 }

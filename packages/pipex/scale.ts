@@ -1,4 +1,4 @@
-import { Promised, StrictStreamMapper } from './index';
+import { StreamXPromised, StreamXMapper } from './index';
 import { IRead, read } from './reader';
 import { IWriter, Writer } from './writer';
 import { Concurrency, IPublishToConcurrency } from '@slavax/funx/concurrency';
@@ -6,8 +6,8 @@ import { syncTick } from '@slavax/funx/tick';
 
 export function scale<Input, Output>(
   max: number,
-  mapper: (input: Input) => Promised<Output>,
-): StrictStreamMapper<Input, Output> {
+  mapper: (input: Input) => StreamXPromised<Output>,
+): StreamXMapper<Input, Output> {
   let outputBuffer: IWriter<Output>;
   let readInput: IRead<Input>;
   let readOutput: IRead<Output>;

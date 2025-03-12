@@ -1,58 +1,52 @@
 // types
 
-export type StrictStream<Type> = AsyncIterable<Type>;
-export type StrictStreamOf<Input> = StrictStream<Input> & {
-  pipe<Output>(
-    mapper: StrictStreamMapper<Input, Output>,
-  ): StrictStreamOf<Output>;
-};
-export type StrictStreamLike<Type> =
-  | AsyncIterable<Type>
-  | Iterable<Type>
-  | Type[];
-export type StrictStreamMapper<Input, Output> = (
-  stream: StrictStream<Input>,
-) => StrictStream<Output>;
-export type Promised<Type> = Type | Promise<Type>;
+export type StreamX<Type> = AsyncIterable<Type>;
 
-export type StrictStreamPlumber<In, Out> = StrictStreamMapper<In, Out> & {
-  pipe<Output>(
-    mapper: StrictStreamMapper<Out, Output>,
-  ): StrictStreamPlumber<In, Output>;
+export type StreamXOf<Input> = StreamX<Input> &
+  Readonly<{
+    pipe<Output>(mapper: StreamXMapper<Input, Output>): StreamXOf<Output>;
+  }>;
+
+export type StreamXLike<Type> = AsyncIterable<Type> | Iterable<Type> | Type[];
+
+export type StreamXMapper<Input, Output> = (
+  stream: StreamX<Input>,
+) => StreamX<Output>;
+
+export type StreamXPromised<Type> = Type | Promise<Type>;
+
+export type StreamXPiper<In, Out> = StreamXMapper<In, Out> & {
+  pipe<Output>(mapper: StreamXMapper<Out, Output>): StreamXPiper<In, Output>;
 };
 
 // of
-export function of<Input>(
-  inputStream: StrictStream<Input>,
-): StrictStreamOf<Input> {
+export function of<Input>(inputStream: StreamX<Input>): StreamXOf<Input> {
   return {
     [Symbol.asyncIterator]: () => inputStream[Symbol.asyncIterator](),
-    pipe<Output>(
-      mapper: StrictStreamMapper<Input, Output>,
-    ): StrictStreamOf<Output> {
+    pipe<Output>(mapper: StreamXMapper<Input, Output>): StreamXOf<Output> {
       return of(mapper(inputStream));
     },
   };
 }
 
 export function pipe<In, Out>(
-  mapper: StrictStreamMapper<In, Out>,
-): StrictStreamPlumber<In, Out> {
-  const streamMapper: StrictStreamMapper<In, Out> = (input: StrictStream<In>) =>
+  mapper: StreamXMapper<In, Out>,
+): StreamXPiper<In, Out> {
+  const streamMapper: StreamXMapper<In, Out> = (input: StreamX<In>) =>
     mapper(input);
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  streamMapper.pipe = <Output>(mapper: StrictStreamMapper<Out, Output>) => {
-    return pipe<In, Output>((input: StrictStream<In>) => {
+  streamMapper.pipe = <Output>(mapper: StreamXMapper<Out, Output>) => {
+    return pipe<In, Output>((input: StreamX<In>) => {
       const nextStream = streamMapper(input);
       return mapper(nextStream);
     });
   };
-  return streamMapper as StrictStreamPlumber<In, Out>;
+  return streamMapper as StreamXPiper<In, Out>;
 }
 
 export async function run<Type, Default = undefined>(
-  stream: StrictStream<Type>,
+  stream: StreamX<Type>,
   defaultValue = undefined as Default,
 ): Promise<Type | Default> {
   let value: Type | Default = defaultValue;

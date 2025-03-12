@@ -1,26 +1,26 @@
-import { StrictStream } from './index';
+import { StreamX } from './index';
 import { IRead, read } from './reader';
 import { IWriter, Writer } from './writer';
 import { syncTick } from '@slavax/funx/tick';
 
 export function merge<T1, T2, T3, T4>(
-  stream1: StrictStream<T1>,
-  stream2: StrictStream<T2>,
-  stream3: StrictStream<T3>,
-  stream4: StrictStream<T4>,
-): StrictStream<T1 | T2 | T3 | T4>;
+  stream1: StreamX<T1>,
+  stream2: StreamX<T2>,
+  stream3: StreamX<T3>,
+  stream4: StreamX<T4>,
+): StreamX<T1 | T2 | T3 | T4>;
 export function merge<T1, T2, T3>(
-  stream1: StrictStream<T1>,
-  stream2: StrictStream<T2>,
-  stream3: StrictStream<T3>,
-): StrictStream<T1 | T2 | T3>;
+  stream1: StreamX<T1>,
+  stream2: StreamX<T2>,
+  stream3: StreamX<T3>,
+): StreamX<T1 | T2 | T3>;
 export function merge<T1, T2>(
-  stream1: StrictStream<T1>,
-  stream2: StrictStream<T2>,
-): StrictStream<T1 | T2>;
+  stream1: StreamX<T1>,
+  stream2: StreamX<T2>,
+): StreamX<T1 | T2>;
 export function merge<Type>(
-  ...streams: StrictStream<any>[]
-): StrictStream<Type> {
+  ...streams: StreamX<any>[]
+): StreamX<Type> {
   let outputBuffer: IWriter<Type>;
   let readOutput: IRead<Type>;
   let _error: Error | undefined = undefined;

@@ -1,10 +1,10 @@
-import { Promised, StrictStream, StrictStreamMapper } from './index';
+import { StreamXPromised, StreamX, StreamXMapper } from './index';
 
 export function map<Input, Output>(
-  mapper: (input: Input) => Promised<Output>,
-): StrictStreamMapper<Input, Output> {
+  mapper: (input: Input) => StreamXPromised<Output>,
+): StreamXMapper<Input, Output> {
   return (inputStream) =>
-    (async function* mappedStream(): StrictStream<Output> {
+    (async function* mappedStream(): StreamX<Output> {
       for await (const record of inputStream) {
         yield await mapper(record);
       }

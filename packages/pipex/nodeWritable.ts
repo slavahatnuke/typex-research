@@ -1,13 +1,13 @@
-import { StrictStream, StrictStreamMapper } from './index';
+import { StreamX, StreamXMapper } from './index';
 import { Writable } from 'stream';
 import { Defer } from '@slavax/funx/defer';
 
 export function nodeWritable<Type>(
   writable: Writable,
   encoding: BufferEncoding = 'utf-8',
-): StrictStreamMapper<Type, Type> {
+): StreamXMapper<Type, Type> {
   return (inputStream) =>
-    (async function* _nodeWritable(): StrictStream<Type> {
+    (async function* _nodeWritable(): StreamX<Type> {
       const deferEnd = Defer<void>();
       writable.on('error', (error) => deferEnd.reject(error));
 

@@ -1,11 +1,11 @@
-import { StrictStream, StrictStreamLike, StrictStreamMapper } from './index';
+import { StreamX, StreamXLike, StreamXMapper } from './index';
 
-export function flat<Type>(): StrictStreamMapper<
-  Type | StrictStreamLike<Type>,
+export function flat<Type>(): StreamXMapper<
+  Type | StreamXLike<Type>,
   Type
 > {
   return (inputStream) =>
-    (async function* flatStream(): StrictStream<Type> {
+    (async function* flatStream(): StreamX<Type> {
       for await (const record of inputStream) {
         if (
           record instanceof Object &&

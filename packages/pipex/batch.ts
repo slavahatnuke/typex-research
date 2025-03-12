@@ -1,9 +1,9 @@
-import { StrictStream, StrictStreamMapper } from './index';
+import { StreamX, StreamXMapper } from './index';
 
-export function batch<Input>(size: number): StrictStreamMapper<Input, Input[]> {
+export function batch<Input>(size: number): StreamXMapper<Input, Input[]> {
   let batched: Input[] = [];
   return (inputStream) =>
-    (async function* batchedStream(): StrictStream<Input[]> {
+    (async function* batchedStream(): StreamX<Input[]> {
       for await (const record of inputStream) {
         batched.push(record);
 

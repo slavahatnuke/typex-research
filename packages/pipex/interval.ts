@@ -1,8 +1,8 @@
 import { Defer } from '@slavax/funx/defer';
 import { reader } from './reader';
-import { StrictStream } from './index';
+import { StreamX } from './index';
 
-export type IInterval = StrictStream<number> & {
+export type IInterval = StreamX<number> & {
   stop: () => void;
 };
 

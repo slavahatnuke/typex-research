@@ -1,10 +1,10 @@
-import { Promised, StrictStream } from './index';
+import { StreamXPromised, StreamX } from './index';
 
 const DONE = Symbol('DONE');
 
-export type IRead<T> = () => Promised<T | typeof DONE>;
+export type IRead<T> = () => StreamXPromised<T | typeof DONE>;
 
-export function reader<T>(read: IRead<T>): StrictStream<T> {
+export function reader<T>(read: IRead<T>): StreamX<T> {
   return {
     [Symbol.asyncIterator]() {
       return {
@@ -17,7 +17,7 @@ export function reader<T>(read: IRead<T>): StrictStream<T> {
   };
 }
 
-export function read<T>(stream: StrictStream<T>): IRead<T> {
+export function read<T>(stream: StreamX<T>): IRead<T> {
   let iterator: AsyncIterator<T>;
   return async () => {
     if (!iterator) {
