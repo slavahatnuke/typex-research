@@ -1,7 +1,7 @@
 import { Mailbox } from './mailbox';
 import { Collect } from './collect';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 describe(Mailbox.name, () => {
   test('mailbox', () => {

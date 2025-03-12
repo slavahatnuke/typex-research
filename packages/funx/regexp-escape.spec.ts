@@ -1,6 +1,6 @@
 import { regExpEscape } from './regexp-escape';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 describe('regExpEscape', () => {
   test('properly escapes regex characters', () => {

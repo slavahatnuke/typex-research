@@ -1,5 +1,7 @@
 import { Defer, DeferData } from './defer';
 
+import { describe, expect, test } from 'vitest';
+
 test('defer', async function () {
   const defer = Defer<string>();
 

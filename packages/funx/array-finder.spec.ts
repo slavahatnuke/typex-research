@@ -1,6 +1,6 @@
 import { ArrayFinder, StrictArrayFinder } from './array-finder';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 describe(ArrayFinder.name, () => {
   test('should work', () => {

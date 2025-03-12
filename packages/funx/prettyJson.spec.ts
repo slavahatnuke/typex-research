@@ -1,6 +1,6 @@
 import { prettyJson } from './prettyJson';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 describe(prettyJson.name, () => {
   test('prettyJson', () => {

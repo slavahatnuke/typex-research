@@ -1,6 +1,6 @@
 import { hash256 } from './hash256';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 describe(hash256.name, () => {
   test('hash256', () => {

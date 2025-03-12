@@ -1,5 +1,5 @@
 import { mem } from './mem';
-
+import { describe, expect, test } from 'vitest';
 test('mem', function () {
   let counter = 0;
   const m = mem(() => {

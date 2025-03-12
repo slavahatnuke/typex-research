@@ -1,5 +1,5 @@
 import { memos } from './memos';
-
+import { describe, expect, test } from 'vitest';
 test('memos', function () {
   let counter = 0;
 

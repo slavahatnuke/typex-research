@@ -1,6 +1,6 @@
 import { AsyncRequest } from './asyncRequest';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 describe(AsyncRequest.name, () => {
   test('resolve', async () => {

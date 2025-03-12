@@ -1,7 +1,7 @@
-export type INewId = () => string;
+export type INewId = () => string | number;
 
 export const fastId: INewId = () => Math.random().toString(36).slice(2);
-export const TestId = (startAt = 0): INewId => {
+export const fastIncrementalId = (startAt = 0): INewId => {
   let id = startAt;
-  return () => String(id++);
+  return () => id++;
 };

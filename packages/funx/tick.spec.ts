@@ -2,6 +2,8 @@ import { syncTick as syncTick, tick as tick } from './tick';
 import { Defer } from './defer';
 import { delay } from './delay';
 
+import { describe, expect, test } from 'vitest';
+
 test('syncTick', async function () {
   const defer = Defer<boolean>();
   let ticked = false;

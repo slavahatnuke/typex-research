@@ -1,6 +1,6 @@
 import { ArrayIndex } from './array-index';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 describe(ArrayIndex.name, () => {
   test('ArrayIndex by scalar', () => {

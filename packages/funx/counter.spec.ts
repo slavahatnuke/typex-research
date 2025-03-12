@@ -1,4 +1,5 @@
 import { Counter } from './counter';
+import { describe, expect, test } from 'vitest';
 
 test('counter', async function () {
   const counter = Counter();

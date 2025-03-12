@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { TestId } from './fun/fastId';
+import { fastIncrementalId } from './fun/fastId';
 import { DefineFlow } from './DefineFlow';
 
 describe(DefineFlow.name, () => {
   it('should return an array of commands, queries, events, and whens', () => {
-    const defineFlow = DefineFlow(undefined, { NewId: TestId() });
+    const defineFlow = DefineFlow(undefined, { NewId: fastIncrementalId() });
 
     const spec = defineFlow(
       ({
