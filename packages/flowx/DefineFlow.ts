@@ -1,4 +1,4 @@
-import { IPromise } from '@slavax/typex';
+import { IPromise, IUseType } from '@slavax/typex';
 import { FlowSpec, UseSpec } from './index';
 import { fastId, INewId } from '@slavax/funx/fastId';
 
@@ -6,6 +6,10 @@ export type IFlowIXToolkit = {
   emit: (event: UseSpec<FlowSpec.Event>, payload: unknown) => IPromise;
 };
 
+type IWhenOutput = Readonly<{
+  then: (input: UseSpec<FlowSpec.Then>['handler']) => IWhenOutput;
+  catch: (input: UseSpec<FlowSpec.Catch>['handler']) => IWhenOutput;
+}>;
 export type IFlowDefinitionLanguage = {
   command: (
     name: string,
@@ -24,11 +28,7 @@ export type IFlowDefinitionLanguage = {
 
   when: <Subject extends UseSpec<FlowSpec.When>['subject']>(
     subject: Subject,
-  ) => Readonly<{
-    then: (
-      input: UseSpec<FlowSpec.Then>['then'],
-    ) => UseSpec<FlowSpec.Then> & IFlowDefinitionMeta;
-  }>; // when
+  ) => IWhenOutput; // when
 
   resolve: <Subject extends UseSpec<FlowSpec.Resolve>['subject']>(
     subject: Subject,
@@ -61,15 +61,16 @@ export type IFlowDefinitionLanguage = {
   ) => UseSpec<FlowSpec.Rejected>; // rejected
 };
 type IFlowDefinition = UseSpec<
-  | FlowSpec.Command
-  | FlowSpec.Query
-  | FlowSpec.Event
-  | FlowSpec.When
-  | FlowSpec.Then
+  FlowSpec.Command | FlowSpec.Query | FlowSpec.Event | FlowSpec.When
 >;
 
 export type IFlowDefinitionMeta = Readonly<{ id: string; meta: unknown }>;
 export type IDefineFlowOutput = IFlowDefinition & IFlowDefinitionMeta;
+
+type UseDefineFlowOutput<Type extends IDefineFlowOutput['type']> = IUseType<
+  IDefineFlowOutput,
+  Type
+>;
 
 export type IDefineFlow = (
   specifier: (language: IFlowDefinitionLanguage) => unknown,
@@ -94,6 +95,31 @@ export function DefineFlow<Meta = undefined>(
       };
       outputs.push(item);
       return item;
+    };
+
+    const WhenOutput = (
+      when: UseDefineFlowOutput<FlowSpec.When>,
+    ): IWhenOutput => {
+      return {
+        then: (input) => {
+          when.steps.push({
+            type: FlowSpec.Then,
+            whenId: when.id,
+            handler: input,
+          });
+
+          return WhenOutput(when);
+        },
+        catch: (input) => {
+          when.steps.push({
+            type: FlowSpec.Catch,
+            whenId: when.id,
+            handler: input,
+          });
+
+          return WhenOutput(when);
+        },
+      };
     };
 
     specifier({
@@ -122,15 +148,10 @@ export function DefineFlow<Meta = undefined>(
         const when = add({
           type: FlowSpec.When,
           subject,
+          steps: [],
         });
-        return {
-          then: (input) =>
-            add({
-              type: FlowSpec.Then,
-              when: when,
-              then: input,
-            }),
-        };
+
+        return WhenOutput(when);
       },
 
       resolve: (subject, handler) => ({

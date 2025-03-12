@@ -10,6 +10,7 @@ export enum FlowSpec {
 
   When = 'When',
   Then = 'Then',
+  Catch = 'Catch',
 
   Handler = 'Handler',
   Resolve = 'Resolve',
@@ -56,27 +57,31 @@ export type IFlowSpec =
         // full form for events
         | FlowSpec.Happened
       >;
+      steps: UseSpec<FlowSpec.Then | FlowSpec.Catch>[];
     }>
   | IType<{
       type: FlowSpec.Then;
-      when: UseSpec<FlowSpec.When>;
-      then:
-        | ((input: unknown, toolkit: IFlowIXToolkit) => IPromise)
-        | UseSpec<FlowSpec.Handler | FlowSpec.Resolve | FlowSpec.Reject>;
+      whenId: string;
+      handler: IThenChainingHandler;
+    }>
+  | IType<{
+      type: FlowSpec.Catch;
+      whenId: string;
+      handler: IThenChainingHandler;
     }>
   | IType<{
       type: FlowSpec.Handler;
-      handler: (input: unknown, toolkit: IFlowIXToolkit) => IPromise;
+      handler: IHandlerAsFunction;
     }>
   | IType<{
       type: FlowSpec.Resolve;
       subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
-      handler: (input: unknown, toolkit: IFlowIXToolkit) => IPromise;
+      handler: IHandlerAsFunction;
     }>
   | IType<{
       type: FlowSpec.Reject;
       subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
-      handler: (input: unknown, toolkit: IFlowIXToolkit) => IPromise;
+      handler: IHandlerAsFunction;
     }>
   | IType<{
       type: FlowSpec.Happened;
@@ -95,3 +100,8 @@ export type IFlowSpec =
       subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
     }>;
 
+type IHandlerAsFunction = (input: unknown, toolkit: IFlowIXToolkit) => IPromise;
+
+type IThenChainingHandler =
+  | IHandlerAsFunction
+  | UseSpec<FlowSpec.Handler | FlowSpec.Resolve | FlowSpec.Reject>;
