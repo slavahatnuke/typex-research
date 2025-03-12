@@ -71,7 +71,7 @@ function AppView() {
 
       const stream = of(sequence(5_000))
         .pipe(map((input) => `Hello number: ${input}`))
-        .pipe(relaxedBatch(1000))
+        .pipe(relaxedBatch())
         .pipe(tap(() => speedTest.track()));
       // .pipe(tap(console.log));
 
