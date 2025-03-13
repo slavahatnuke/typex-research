@@ -1,0 +1,12 @@
+# Changelog
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## 1.1.0 (2025-03-13)
+
+
+### Features
+
+* **create-turbo:** apply official-starter transform ([90c7f23](https://github.com/slavahatnuke/typex-research/commit/90c7f235014f6a250c29126dad265dd578b1f125))
+* **create-turbo:** apply package-manager transform ([8c6d410](https://github.com/slavahatnuke/typex-research/commit/8c6d410a2485d4f53b09803e5549cc7a8d66016e))
+* **create-turbo:** create basic ([d9393e2](https://github.com/slavahatnuke/typex-research/commit/d9393e204d851815337a7215bdc3f0630c2247a8))
