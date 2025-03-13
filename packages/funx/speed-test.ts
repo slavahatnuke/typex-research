@@ -73,11 +73,20 @@ export function SpeedTest({
         }
       }
 
-      if (inIntervalMilliseconds !== null && reportedAt) {
-        const lastTimeReportedInMS =
-          new Date().getTime() - reportedAt.getTime();
-        if (lastTimeReportedInMS > inIntervalMilliseconds) {
-          publishReport(createReport(null));
+      if (inIntervalMilliseconds !== null) {
+        if (reportedAt) {
+          const lastTimeReportedInMS =
+            new Date().getTime() - reportedAt.getTime();
+          if (lastTimeReportedInMS > inIntervalMilliseconds) {
+            publishReport(createReport(null));
+          }
+        } else {
+          const lastTimeReportedInMS =
+            new Date().getTime() - startedAt.getTime();
+
+          if (lastTimeReportedInMS > inIntervalMilliseconds) {
+            publishReport(createReport(null));
+          }
         }
       }
     },

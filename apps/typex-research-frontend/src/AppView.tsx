@@ -67,15 +67,17 @@ function AppView() {
     void (async function () {
       const speedTest = SpeedTest({
         every: 1000,
+        inIntervalMilliseconds: 7000,
       });
 
       const stream = of(sequence(5_000))
-        .pipe(map((input) => `Hello number: ${input}`))
         .pipe(relaxedBatch())
         .pipe(tap(() => speedTest.track()));
       // .pipe(tap(console.log));
 
       await run(stream);
+
+      console.log('streaming >> done');
     })();
 
     // Cleanup the socket connection when the component unmounts
