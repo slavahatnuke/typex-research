@@ -63,7 +63,7 @@ type IRequestPayload<Request extends IType> = IType<{
   type: Payload.Request;
   request: IMetaFreeObject<Request>;
 }>;
-type IResponsePayload<Response extends IType | void = void> = IType<{
+type IResponsePayload<Response> = IType<{
   type: Payload.Response;
   response: Response;
 }>;
@@ -86,7 +86,7 @@ type IErrorPayload<Type extends IType> = {
 // actions
 export type ICommand<
   Request extends IType,
-  Response extends IType | void = void,
+  Response extends unknown | void = void,
   Events extends IType | void = void,
 > = IMetaType<
   Request,
@@ -96,7 +96,10 @@ export type ICommand<
   | IEventsPayload<Events>
 >;
 
-export type IQuery<Request extends IType, Response extends IType> = IMetaType<
+export type IQuery<
+  Request extends IType,
+  Response extends unknown = unknown,
+> = IMetaType<
   Request,
   | IActionType<Action.Query>
   | IRequestPayload<Request>
@@ -231,7 +234,7 @@ export type IGiveResponsePayload<
     Input,
     Payload.Response
   >,
-> = X extends IResponsePayload<IType> ? X['response'] : void;
+> = X extends IResponsePayload<any> ? X['response'] : void;
 
 type IGiveRequestInput<
   ApiSpecification extends IType,
@@ -390,7 +393,7 @@ export function Service<
                     event: _event,
                     context: context,
                     // @ts-ignore
-                    input: _cleanServiceInput({...input, type}),
+                    input: _cleanServiceInput({ ...input, type }),
                   });
 
                   return _event;
