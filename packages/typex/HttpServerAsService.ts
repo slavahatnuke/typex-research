@@ -3,10 +3,12 @@ import { IPromise, IService, IType, SubscribeService } from './index';
 import { ensureSlashAtTheEnd } from './lib/ensureSlashAtTheEnd';
 import { deserializeJSON, serializeJSON } from './lib/serializeJSON';
 
+const _identity = Symbol('_identity');
+
 export function HttpServerAsService<
   Service extends IService<any, any, any>,
-  FrontendContext = unknown,
-  BackendContext = unknown,
+  FrontendContext extends Record<any, any> = Record<any, any>,
+  BackendContext extends Record<any, any> = Record<any, any>,
 >(
   service: Service,
   {
@@ -15,9 +17,12 @@ export function HttpServerAsService<
     serialize = serializeJSON,
     deserialize = deserializeJSON,
     mapFrontendContextToBackend = (value: FrontendContext) =>
-      value as unknown as BackendContext,
+      value && value instanceof Object
+        ? (value as unknown as BackendContext)
+        : ({} as BackendContext),
     mapBackendContextToFronted = (value) => value as unknown as FrontendContext,
     authorizer = () => false,
+    identifier = (context: BackendContext) => 'default',
   }: Partial<{
     apiUrl: string;
     serialize: (value: any) => string;
@@ -35,6 +40,8 @@ export function HttpServerAsService<
       httpRequest: IncomingMessage,
       context: FrontendContext,
     ) => IPromise<boolean>;
+
+    identifier: (context: BackendContext) => IPromise<string>;
 
     SSE: boolean;
   }> = {},
@@ -86,6 +93,13 @@ export function HttpServerAsService<
       return;
     }
 
+    async function getBackendContext() {
+      const backendContext = await mapFrontendContextToBackend(context);
+      // @ts-ignore
+      backendContext[_identity] = await identifier(backendContext);
+      return backendContext;
+    }
+
     // Handle POST request at the API URL
     if (req.method === 'POST' && req.url === apiUrl) {
       let body = '';
@@ -102,7 +116,7 @@ export function HttpServerAsService<
             const result = await service(
               input.type,
               input,
-              await mapFrontendContextToBackend(context),
+              await getBackendContext(),
             );
 
             answer(result);
@@ -118,7 +132,7 @@ export function HttpServerAsService<
                     data: await service(
                       input.type,
                       input,
-                      await mapFrontendContextToBackend(context),
+                      await getBackendContext(),
                     ),
                   };
                 } catch (error) {
@@ -136,7 +150,7 @@ export function HttpServerAsService<
 
           answer({ type: 400, request: input });
         } catch (error) {
-          console.error(error);
+          console.error(error, body);
           answer({ type: 500, reason: error });
         }
       });
@@ -157,10 +171,19 @@ export function HttpServerAsService<
 
       const subscribeService = SubscribeService(service);
 
+      const backendContext = await getBackendContext();
       const unsubscribeService = subscribeService(({ event, context }) => {
-        res.write(
-          `data: ${serialize({ event, context: mapBackendContextToFronted(context), input: undefined })}\n\n`,
-        );
+        if (
+          context[_identity] &&
+          // @ts-ignore
+          backendContext[_identity] &&
+          // @ts-ignore
+          context[_identity] === backendContext[_identity]
+        ) {
+          res.write(
+            `data: ${serialize({ event, context: mapBackendContextToFronted(context), input: undefined })}\n\n`,
+          );
+        }
       });
 
       req.on('close', () => {
