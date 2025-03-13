@@ -60,7 +60,7 @@ export function HttpServerAsService<
   const subscribeService = SubscribeService(service);
   const unsubscribeService = subscribeService(fanOut.publish);
 
-  return http.createServer(async (req, res) => {
+  const server = http.createServer(async (req, res) => {
     // Helper function to send the response
     function answer<
       Type extends
@@ -216,4 +216,10 @@ export function HttpServerAsService<
       res.end('Not Found');
     }
   });
+
+  server.on('close', () => {
+    unsubscribeService();
+  });
+
+  return server;
 }
