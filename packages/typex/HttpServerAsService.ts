@@ -43,9 +43,14 @@ export function HttpServerAsService<
 
   return http.createServer(async (req, res) => {
     // Helper function to send the response
-    function answer<Type extends IType | IType[] | { type: number }>(
-      response: Type,
-    ) {
+    function answer<
+      Type extends
+        | IType
+        | Array<IType>
+        | ReadonlyArray<IType>
+        | { type: number }
+        | { type: number }[],
+    >(response: Type) {
       res.writeHead(200, {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*', // Allow CORS from any domain
@@ -107,11 +112,21 @@ export function HttpServerAsService<
           if (Array.isArray(input)) {
             const results = await Promise.all(
               input.map(async (input) => {
-                return await service(
-                  input.type,
-                  input,
-                  await mapFrontendContextToBackend(context),
-                );
+                try {
+                  return {
+                    type: 200,
+                    data: await service(
+                      input.type,
+                      input,
+                      await mapFrontendContextToBackend(context),
+                    ),
+                  };
+                } catch (error) {
+                  return {
+                    type: 500,
+                    reason: error,
+                  };
+                }
               }),
             );
 
@@ -135,7 +150,10 @@ export function HttpServerAsService<
         'Access-Control-Allow-Methods',
         'GET, POST, PUT, DELETE, OPTIONS',
       );
-      res.setHeader('Access-Control-Allow-Headers', ['Content-Type', 'X-Typex-Context']);
+      res.setHeader('Access-Control-Allow-Headers', [
+        'Content-Type',
+        'X-Typex-Context',
+      ]);
 
       const subscribeService = SubscribeService(service);
 
