@@ -264,4 +264,45 @@ describe(DefineFlow.name, () => {
     ]);
     // ---
   });
+
+  it('works v2', () => {
+    const defineFlow = DefineFlow(undefined, { NewId: FastIncrementalId() });
+
+    const spec = defineFlow(
+      ({
+        command,
+        event,
+        when,
+        requested,
+        resolved,
+        rejected,
+        resolve,
+        reject,
+        query,
+      }) => {
+        const createUser = command('CreateUser', 'Creates a user');
+
+        // case 1 / sync
+        when(createUser).then(
+          resolve(createUser, async (payload, { emit, call }) => {
+            const user = await call('GetUser', { userId: '123' });
+            return user;
+          }),
+        );
+
+        // case 2 / async
+        when(createUser)
+          .then(async (input, { emit, call, request }) => {
+            return request('GetUser', { userId: '123' });
+          })
+          .then((user) => {
+            return resolve(createUser, () => user);
+          });
+      },
+    );
+
+    // ---
+    expect(spec).toEqual(111);
+    // ---
+  });
 });

@@ -1,10 +1,6 @@
-import { IPromise, IUseType } from '@slavax/typex';
-import { FlowSpec, UseSpec } from './index';
+import { IPromise, IType, IUseType, NewError } from '@slavax/typex';
+import { FlowSpec, IFlowSpecEntity, IFlowSpecValue, UseSpec } from './index';
 import { fastId, INewId } from '@slavax/funx/fastId';
-
-export type IFlowIXToolkit = {
-  emit: (event: UseSpec<FlowSpec.Event>, payload: unknown) => IPromise;
-};
 
 type IWhenOutput = Readonly<{
   then: (input: UseSpec<FlowSpec.Then>['handler']) => IWhenOutput;
@@ -25,6 +21,17 @@ export type IFlowDefinitionLanguage = {
     name: string,
     title?: string,
   ) => UseSpec<FlowSpec.Query> & IFlowDefinitionMeta; // query
+
+  value: <Type = unknown>(
+    name: string,
+    title?: string,
+  ) => IFlowSpecValue<Type> & IFlowDefinitionMeta; // value
+
+  entity: <Type = unknown>(
+    name: string,
+    identity?: (entity: Type) => IPromise<string>,
+    title?: string,
+  ) => IFlowSpecEntity<Type> & IFlowDefinitionMeta; // value
 
   when: <Subject extends UseSpec<FlowSpec.When>['subject']>(
     subject: Subject,
@@ -60,8 +67,14 @@ export type IFlowDefinitionLanguage = {
     subject: Subject,
   ) => UseSpec<FlowSpec.Rejected>; // rejected
 };
+
 type IFlowDefinition = UseSpec<
-  FlowSpec.Command | FlowSpec.Query | FlowSpec.Event | FlowSpec.When
+  | FlowSpec.Command
+  | FlowSpec.Query
+  | FlowSpec.Event
+  | FlowSpec.When
+  | FlowSpec.Value
+  | FlowSpec.Entity
 >;
 
 export type IFlowDefinitionMeta = Readonly<{ id: string; meta: unknown }>;
@@ -85,15 +98,25 @@ export function DefineFlow<Meta = undefined>(
   ) {
     const outputs: IDefineFlowOutput[] = [];
 
+    function throwErrorIfNotSpecifying() {
+      if (!specifying) {
+        throw ImpossibleToSpecifyError({});
+      }
+    }
+
     const add = <Type extends IFlowDefinition>(
       output: Type,
     ): Type & IFlowDefinitionMeta => {
+      throwErrorIfNotSpecifying();
+
       const item = {
         ...output,
         id: String(NewId()),
         meta,
       };
+
       outputs.push(item);
+
       return item;
     };
 
@@ -102,6 +125,8 @@ export function DefineFlow<Meta = undefined>(
     ): IWhenOutput => {
       return {
         then: (input) => {
+          throwErrorIfNotSpecifying();
+
           when.steps.push({
             type: FlowSpec.Then,
             whenId: when.id,
@@ -111,6 +136,8 @@ export function DefineFlow<Meta = undefined>(
           return WhenOutput(when);
         },
         catch: (input) => {
+          throwErrorIfNotSpecifying();
+
           when.steps.push({
             type: FlowSpec.Catch,
             whenId: when.id,
@@ -122,71 +149,107 @@ export function DefineFlow<Meta = undefined>(
       };
     };
 
-    specifier({
-      command: (name, title) =>
-        add({
-          type: FlowSpec.Command,
-          name,
-          title: title ?? '',
-        }),
+    let specifying = true;
+    try {
+      specifier({
+        command: (name, title) =>
+          add({
+            type: FlowSpec.Command,
+            name,
+            title: title ?? '',
+          }),
 
-      event: (name, title) =>
-        add({
-          type: FlowSpec.Event,
-          name,
-          title: title ?? '',
-        }),
+        event: (name, title) =>
+          add({
+            type: FlowSpec.Event,
+            name,
+            title: title ?? '',
+          }),
 
-      query: (name, title) =>
-        add({
-          type: FlowSpec.Query,
-          name,
-          title: title ?? '',
-        }),
+        query: (name, title) =>
+          add({
+            type: FlowSpec.Query,
+            name,
+            title: title ?? '',
+          }),
 
-      when: (subject) => {
-        const when = add({
-          type: FlowSpec.When,
+        value: (name, title) =>
+          add({
+            type: FlowSpec.Value,
+            name,
+            title: title ?? '',
+          }),
+
+        entity: (
+          name: string,
+          identity?: (entity: any) => IPromise<string>,
+          title?: string,
+        ) =>
+          add({
+            type: FlowSpec.Entity,
+            name,
+            title: title ?? '',
+            identity,
+          }),
+
+        when: (subject) => {
+          const when = add({
+            type: FlowSpec.When,
+            subject,
+            steps: [],
+          });
+
+          return WhenOutput(when);
+        },
+
+        resolve: (subject, handler) => ({
+          type: FlowSpec.Resolve,
           subject,
-          steps: [],
-        });
+          handler,
+        }),
 
-        return WhenOutput(when);
-      },
+        reject: (subject, handler) => ({
+          type: FlowSpec.Reject,
+          subject,
+          handler,
+        }),
 
-      resolve: (subject, handler) => ({
-        type: FlowSpec.Resolve,
-        subject,
-        handler,
-      }),
+        happened: (subject) => ({
+          type: FlowSpec.Happened,
+          subject,
+        }),
 
-      reject: (subject, handler) => ({
-        type: FlowSpec.Reject,
-        subject,
-        handler,
-      }),
+        requested: (subject) => ({
+          type: FlowSpec.Requested,
+          subject,
+        }),
 
-      happened: (subject) => ({
-        type: FlowSpec.Happened,
-        subject,
-      }),
+        resolved: (subject) => ({
+          type: FlowSpec.Resolved,
+          subject,
+        }),
 
-      requested: (subject) => ({
-        type: FlowSpec.Requested,
-        subject,
-      }),
-
-      resolved: (subject) => ({
-        type: FlowSpec.Resolved,
-        subject,
-      }),
-
-      rejected: (subject) => ({
-        type: FlowSpec.Rejected,
-        subject,
-      }),
-    });
+        rejected: (subject) => ({
+          type: FlowSpec.Rejected,
+          subject,
+        }),
+      });
+    } finally {
+      specifying = false;
+    }
 
     return outputs;
   };
 }
+
+enum DefineFlowError {
+  ImpossibleToSpecifyError = 'ImpossibleToSpecifyError',
+}
+
+type IDefineFlowError = IType<{
+  type: DefineFlowError.ImpossibleToSpecifyError;
+}>;
+
+const ImpossibleToSpecifyError = NewError<IDefineFlowError>(
+  DefineFlowError.ImpossibleToSpecifyError,
+);
