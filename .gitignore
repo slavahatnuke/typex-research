@@ -10,6 +10,9 @@ node_modules
 *.spec.js
 /**/*.spec.js
 
+*.d.ts
+/**/*.d.ts
+
 # Local env files
 .env
 .env.local

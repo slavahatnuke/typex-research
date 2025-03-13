@@ -7,7 +7,7 @@
     "dev": "yarn dev.on",
     "dev.on": "tsc --watch",
     "dev.off": "echo 'dev.off'",
-    "build": "tsc",
+    "build": "tsc && tsc --declaration",
     "check-types": "tsc --noEmit"
   },
   "keywords": [],
