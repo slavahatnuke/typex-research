@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+All notable changes to this project will be documented in this file. See [standard-version --no-verify](https://github.com/conventional-changelog/standard-version --no-verify) for commit guidelines.
 
 ### [1.0.10](https://github.com/slavahatnuke/typex-research/compare/v1.0.9...v1.0.10) (2025-03-13)
 
