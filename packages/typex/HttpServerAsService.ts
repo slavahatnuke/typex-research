@@ -16,7 +16,7 @@ const _identity = Symbol('_identity');
 export function HttpServerAsService<
   Service extends IService<any, any, any>,
   FrontendContext extends Record<any, any> = Record<any, any>,
-  BackendContext extends Record<any, any> = Record<any, any>,
+  BackendContext extends Record<any, any> = FrontendContext,
 >(
   service: Service,
   {
