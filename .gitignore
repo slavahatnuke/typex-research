@@ -7,6 +7,9 @@ node_modules
 /.idea
 .idea
 
+*.spec.js
+/**/*.spec.js
+
 # Local env files
 .env
 .env.local
