@@ -1,5 +1,5 @@
 import { IPromise, IType, IUseType, NewError } from '@slavax/typex';
-import { FlowSpec, IFlowSpecEntity, IFlowSpecValue, UseSpec } from './index';
+import { FlowSpec, IFlowSpecEntity, IFlowSpecState, UseSpec } from './index';
 import { fastId, INewId } from '@slavax/funx/fastId';
 
 type IWhenOutput = Readonly<{
@@ -22,15 +22,16 @@ export type IFlowDefinitionLanguage = {
     title?: string,
   ) => UseSpec<FlowSpec.Query> & IFlowDefinitionMeta; // query
 
-  value: <Type = unknown>(
+  state: <Type = unknown>(
     name: string,
     title?: string,
-  ) => IFlowSpecValue<Type> & IFlowDefinitionMeta; // value
+    identity?: (entity: Type) => IPromise<string>,
+  ) => IFlowSpecState<Type> & IFlowDefinitionMeta; // value
 
   entity: <Type = unknown>(
     name: string,
-    identity?: (entity: Type) => IPromise<string>,
     title?: string,
+    identity?: (entity: Type) => IPromise<string>,
   ) => IFlowSpecEntity<Type> & IFlowDefinitionMeta; // value
 
   when: <Subject extends UseSpec<FlowSpec.When>['subject']>(
@@ -73,7 +74,7 @@ type IFlowDefinition = UseSpec<
   | FlowSpec.Query
   | FlowSpec.Event
   | FlowSpec.When
-  | FlowSpec.Value
+  | FlowSpec.State
   | FlowSpec.Entity
 >;
 
@@ -173,17 +174,17 @@ export function DefineFlow<Meta = undefined>(
             title: title ?? '',
           }),
 
-        value: (name, title) =>
+        state: (name, title) =>
           add({
-            type: FlowSpec.Value,
+            type: FlowSpec.State,
             name,
             title: title ?? '',
           }),
 
         entity: (
           name: string,
-          identity?: (entity: any) => IPromise<string>,
           title?: string,
+          identity?: (entity: any) => IPromise<string>,
         ) =>
           add({
             type: FlowSpec.Entity,

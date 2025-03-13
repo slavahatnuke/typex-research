@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DefineFlow } from './DefineFlow';
 import { FastIncrementalId } from '@slavax/funx/fastId';
+import { toArray } from '@slavax/streamx/toArray';
+import { StreamX } from '@slavax/streamx';
 
 describe(DefineFlow.name, () => {
   it('should return an array of commands, queries, events, and whens', () => {
@@ -295,9 +297,20 @@ describe(DefineFlow.name, () => {
           .then(async (input, { emit, call, request }) => {
             return request('GetUser', { userId: '123' });
           })
-          .then((user) => {
-            return resolve(createUser, () => user);
-          });
+          .then(async (user, { value }) => {
+            return value(user);
+          })
+          .then(async (user, { all, value, request }) => {
+            return all([value(user), request('GetUser', { userId: '345' })]);
+          })
+          .then(
+            resolve(createUser, async (userStream) => {
+              const [user1, user2] = await toArray(
+                userStream as StreamX<unknown>,
+              );
+              return user1;
+            }),
+          );
       },
     );
 

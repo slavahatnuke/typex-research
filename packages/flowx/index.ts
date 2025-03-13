@@ -23,8 +23,12 @@ export enum FlowSpec {
   Request = 'Request',
   RequestId = 'RequestId',
 
-  Value = 'Value',
+  State = 'State',
   Entity = 'Entity',
+  Value = 'Value',
+  DataType = 'DataType',
+
+  All = 'All',
 }
 
 export type UseSpec<Type extends FlowSpec> = IUseType<IFlowSpec, Type>;
@@ -45,7 +49,7 @@ export type IFlowSpec =
       name: string;
       title: string;
     }>
-  | IFlowSpecValue
+  | IFlowSpecState
   | IFlowSpecEntity
   | IType<{
       type: FlowSpec.When;
@@ -115,7 +119,20 @@ export type IFlowSpec =
       type: FlowSpec.RequestId;
       id: string;
       parent?: UseSpec<FlowSpec.RequestId>;
+    }>
+  | IFlowSpecValue
+  | IType<{
+      type: FlowSpec.All;
+      values: StreamLike<
+        UseSpec<FlowSpec.Request | FlowSpec.Value> | Promise<unknown>
+      >;
     }>;
+
+type StreamLike<Type> =
+  | AsyncIterable<Type>
+  | Iterable<Type>
+  | Type[]
+  | ReadonlyArray<Type>;
 
 export type IFlowToolkit = {
   // events
@@ -136,22 +153,28 @@ export type IFlowToolkit = {
   ) => UseSpec<FlowSpec.Request>;
 
   // values
-  has: (value: UseSpec<FlowSpec.Value>) => boolean;
-  get: <Value extends UseSpec<FlowSpec.Value>>(value: Value) => unknown;
-  set: <Value extends UseSpec<FlowSpec.Value | FlowSpec.Entity>>(
+  value: <Type = unknown>(value: Type) => IFlowSpecValue<Type>;
+
+  // wait for all values to be resolved;
+  all: <Values extends UseSpec<FlowSpec.All>['values']>(
+    values: Values,
+  ) => UseSpec<FlowSpec.All>;
+
+  // values
+  has: (value: UseSpec<FlowSpec.State>) => boolean;
+  get: <Value extends UseSpec<FlowSpec.State>>(value: Value) => unknown;
+  set: <Value extends UseSpec<FlowSpec.State | FlowSpec.Entity>>(
     value: Value,
     payload: unknown,
   ) => unknown;
-  del: (value: UseSpec<FlowSpec.Value>) => unknown;
+  del: (value: UseSpec<FlowSpec.State>) => unknown;
 };
 
 type IHandlerAsFunction<Input = unknown> = (
   input: Input,
   toolkit: IFlowToolkit,
 ) => IPromise<
-  | undefined
-  | void
-  | UseSpec<FlowSpec.Request | FlowSpec.Resolve | FlowSpec.Reject>
+  undefined | void | UseSpec<FlowSpec.Request | FlowSpec.Value | FlowSpec.All>
 >;
 
 // output of this function is what will be the result of the requested command/query
@@ -164,10 +187,11 @@ type IThenChainingHandler =
   | IHandlerAsFunction
   | UseSpec<FlowSpec.Handler | FlowSpec.Resolve | FlowSpec.Reject>;
 
-export type IFlowSpecValue<Type = unknown> = IType<{
-  type: FlowSpec.Value;
+export type IFlowSpecState<Type = unknown> = IType<{
+  type: FlowSpec.State;
   name: string;
   title: string;
+  identity?: (value: Type) => IPromise<string>;
 }> &
   IMetaObject<IDataType<Type>>;
 
@@ -180,6 +204,12 @@ export type IFlowSpecEntity<EntityType = unknown> = IType<{
   IMetaObject<IDataType<EntityType>>;
 
 export type IDataType<Type = unknown> = IType<{
-  type: 'DataType';
+  type: FlowSpec.DataType;
   dataType: Type;
 }>;
+
+export type IFlowSpecValue<Value = unknown> = IType<{
+  type: FlowSpec.Value;
+  value: Value;
+}> &
+  IMetaObject<IDataType<Value>>;
