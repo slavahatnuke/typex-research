@@ -3,23 +3,39 @@ import { IPromise, IService, IType, SubscribeService } from './index';
 import { ensureSlashAtTheEnd } from './lib/ensureSlashAtTheEnd';
 import { deserializeJSON, serializeJSON } from './lib/serializeJSON';
 
-export function HttpServerAsService<Service extends IService<any, any, any>>(
+export function HttpServerAsService<
+  Service extends IService<any, any, any>,
+  FrontendContext = unknown,
+  BackendContext = unknown,
+>(
   service: Service,
   {
     apiUrl = '/',
     SSE = true,
     serialize = serializeJSON,
     deserialize = deserializeJSON,
-    mapFrontendContextToBackend = (value) => value,
-    mapBackendContextToFronted = (value) => value,
+    mapFrontendContextToBackend = (value: FrontendContext) =>
+      value as unknown as BackendContext,
+    mapBackendContextToFronted = (value) => value as unknown as FrontendContext,
     authorizer = () => false,
   }: Partial<{
     apiUrl: string;
     serialize: (value: any) => string;
     deserialize: (value: string) => any;
-    mapFrontendContextToBackend: (value: any) => IPromise<any>;
-    mapBackendContextToFronted: (value: any) => IPromise<any>;
-    authorizer: (httpRequest: IncomingMessage) => IPromise<boolean>;
+
+    mapFrontendContextToBackend: (
+      value: FrontendContext,
+    ) => IPromise<BackendContext>;
+
+    mapBackendContextToFronted: (
+      value: BackendContext,
+    ) => IPromise<FrontendContext>;
+
+    authorizer: (
+      httpRequest: IncomingMessage,
+      context: FrontendContext,
+    ) => IPromise<boolean>;
+
     SSE: boolean;
   }> = {},
 ) {
@@ -27,12 +43,14 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
 
   return http.createServer(async (req, res) => {
     // Helper function to send the response
-    function answer<Type extends IType | { type: number }>(response: Type) {
+    function answer<Type extends IType | IType[] | { type: number }>(
+      response: Type,
+    ) {
       res.writeHead(200, {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*', // Allow CORS from any domain
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', // Allow specific HTTP methods
-        'Access-Control-Allow-Headers': 'Content-Type', // Allow headers in the request
+        'Access-Control-Allow-Headers': ['Content-Type', 'X-Typex-Context'], // Allow headers in the request
       });
       res.end(serialize(response));
     }
@@ -42,13 +60,22 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
       res.writeHead(200, {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': ['Content-Type', 'X-Typex-Context'],
       });
       res.end();
       return;
     }
 
-    if (await authorizer(req)) {
+    let context: FrontendContext;
+    const contextHeader = req.headers['x-typex-context'];
+
+    if (typeof contextHeader === 'string') {
+      context = deserialize(contextHeader);
+    } else {
+      context = {} as FrontendContext;
+    }
+
+    if (await authorizer(req, context)) {
       res.writeHead(401, { 'Content-Type': 'text/plain' });
       res.end('Unauthorized');
       return;
@@ -64,24 +91,35 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
 
       req.on('end', async () => {
         try {
-          const request = deserialize(body);
-          if (request && 'input' in request) {
-            const input = request.input;
-            const context = 'context' in request ? request.context : undefined;
+          const input = deserialize(body);
+          if (input && 'type' in input) {
+            // @ts-ignore
+            const result = await service(
+              input.type,
+              input,
+              await mapFrontendContextToBackend(context),
+            );
 
-            if (input && 'type' in input) {
-              // @ts-ignore
-              answer(
-                await service(
+            answer(result);
+            return;
+          }
+
+          if (Array.isArray(input)) {
+            const results = await Promise.all(
+              input.map(async (input) => {
+                return await service(
                   input.type,
                   input,
                   await mapFrontendContextToBackend(context),
-                ),
-              );
-              return;
-            }
+                );
+              }),
+            );
+
+            answer(results);
+            return;
           }
-          answer({ type: 400, request });
+
+          answer({ type: 400, request: input });
         } catch (error) {
           console.error(error);
           answer({ type: 500, reason: error });
@@ -97,7 +135,7 @@ export function HttpServerAsService<Service extends IService<any, any, any>>(
         'Access-Control-Allow-Methods',
         'GET, POST, PUT, DELETE, OPTIONS',
       );
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.setHeader('Access-Control-Allow-Headers', ['Content-Type', 'X-Typex-Context']);
 
       const subscribeService = SubscribeService(service);
 

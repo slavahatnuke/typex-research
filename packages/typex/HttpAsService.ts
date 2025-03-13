@@ -57,7 +57,7 @@ export function HttpAsService<
 
       eventSource.onmessage = async (message) => {
         try {
-          const { event, context, input } = deserialize(message.data);
+          const { event, context } = deserialize(message.data);
           await publish({
             event,
             context,
@@ -79,9 +79,10 @@ export function HttpAsService<
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'X-Typex-Context': serialize(context),
             ...headers(),
           },
-          body: serialize({ input: { ...input, type }, context }),
+          body: serialize({ ...input, type }),
         });
 
         if (response.ok) {
