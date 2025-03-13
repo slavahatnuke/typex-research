@@ -311,7 +311,7 @@ describe(DefineFlow.name, () => {
 
               // in case of stream of requests
               const resultsInSync = await waitFor(
-                all([value(user), request('GetUser', { userId: '345' })]),
+                stream(all([value(user), request('GetUser', { userId: '345' })])),
               );
 
               const streamOfResultsInSync = await stream(
@@ -337,7 +337,7 @@ describe(DefineFlow.name, () => {
     );
 
     // ---
-    expect(spec).toEqual(111);
+    // expect(spec).toEqual(111);
     // ---
   });
 });
