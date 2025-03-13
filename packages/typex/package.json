@@ -1,14 +1,13 @@
 {
   "name": "@slavax/typex",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.js",
   "scripts": {
     "test": "vitest",
     "dev": "tsc --watch",
     "build": "tsc",
-    "public.publish": "npm publish --access public",
     "check-types": "tsc --noEmit",
-    "push1": "yarn build & npx --yes standard-version && npm publish --access public"
+    "release": "yarn build & npx --yes standard-version && echo '> npm publish --access public'"
   },
   "keywords": [],
   "author": "",
