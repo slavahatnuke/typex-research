@@ -5,7 +5,7 @@
   "scripts": {
     "test": "vitest",
     "dev": "tsc --watch",
-    "build": "tsc && tsc --declaration",
+    "build": "tsc",
     "check-types": "tsc --noEmit",
     "release": "yarn build & npx --yes standard-version && echo '> npm publish --access public'"
   },

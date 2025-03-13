@@ -7,7 +7,7 @@
     "dev": "yarn dev.on",
     "dev.on": "tsc --watch",
     "dev.off": "echo 'dev.off'",
-    "build": "tsc && tsc --declaration",
+    "build": "tsc",
     "public.publish": "npm publish --access public",
     "check-types": "tsc --noEmit"
   },
