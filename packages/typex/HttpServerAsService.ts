@@ -1,5 +1,13 @@
 import http, { IncomingMessage } from 'http';
-import { IPromise, IService, IType, SubscribeService } from './index';
+import {
+  IBus,
+  InMemoryBus,
+  IPromise,
+  IService,
+  IServiceEvent,
+  IType,
+  SubscribeService,
+} from './index';
 import { ensureSlashAtTheEnd } from './lib/ensureSlashAtTheEnd';
 import { deserializeJSON, serializeJSON } from './lib/serializeJSON';
 
@@ -23,6 +31,7 @@ export function HttpServerAsService<
     mapBackendContextToFronted = (value) => value as unknown as FrontendContext,
     authorizer = () => false,
     identifier = (context: BackendContext) => 'default',
+    fanOut = InMemoryBus<IServiceEvent<any>>(),
   }: Partial<{
     apiUrl: string;
     serialize: (value: any) => string;
@@ -42,11 +51,14 @@ export function HttpServerAsService<
     ) => IPromise<boolean>;
 
     identifier: (context: BackendContext) => IPromise<string>;
-
+    fanOut: IBus<IServiceEvent<any>>;
     SSE: boolean;
   }> = {},
 ) {
   apiUrl = ensureSlashAtTheEnd(apiUrl);
+
+  const subscribeService = SubscribeService(service);
+  const unsubscribeService = subscribeService(fanOut.publish);
 
   return http.createServer(async (req, res) => {
     // Helper function to send the response
@@ -169,11 +181,10 @@ export function HttpServerAsService<
         'X-Typex-Context',
       ]);
 
-      const subscribeService = SubscribeService(service);
-
       const backendContext = await getBackendContext();
-      const unsubscribeService = subscribeService(({ event, context }) => {
+      const unsubscribeFanOut = fanOut.subscribe(({ event, context }) => {
         if (
+          // @ts-ignore
           context[_identity] &&
           // @ts-ignore
           backendContext[_identity] &&
@@ -181,13 +192,19 @@ export function HttpServerAsService<
           context[_identity] === backendContext[_identity]
         ) {
           res.write(
-            `data: ${serialize({ event, context: mapBackendContextToFronted(context), input: undefined })}\n\n`,
+            `data: ${serialize({
+              event,
+              context: mapBackendContextToFronted(
+                context as unknown as BackendContext,
+              ),
+              input: undefined,
+            })}\n\n`,
           );
         }
       });
 
       req.on('close', () => {
-        unsubscribeService();
+        unsubscribeFanOut();
         res.end();
       });
       // health
