@@ -29,6 +29,7 @@ export enum FlowSpec {
   DataType = 'DataType',
 
   All = 'All',
+  Loop = 'Loop',
 }
 
 export type UseSpec<Type extends FlowSpec> = IUseType<IFlowSpec, Type>;
@@ -125,7 +126,11 @@ export type IFlowSpec =
       type: FlowSpec.All;
       values: StreamLike<
         UseSpec<FlowSpec.Request | FlowSpec.Value> | Promise<unknown>
-      >;
+      > | UseSpec<FlowSpec.Loop>;
+    }>
+  | IType<{
+      type: FlowSpec.Loop;
+      handler: ILoopFunction;
     }>;
 
 type StreamLike<Type> =
@@ -135,9 +140,18 @@ type StreamLike<Type> =
   | ReadonlyArray<Type>;
 
 type IFlowToolkitStreamingValue =
-  | UseSpec<FlowSpec.Request | FlowSpec.All | FlowSpec.Value>
+  | UseSpec<FlowSpec.Request | FlowSpec.All | FlowSpec.Value | FlowSpec.Loop>
   | Promise<any>
   | StreamLike<any>;
+
+type ILoopFunction<
+  LoopContext extends Record<any, any> = Record<any, any>,
+  Output = unknown,
+> = (
+  loopContext: LoopContext | null | undefined,
+  produce: (output: Output) => IPromise<unknown>,
+) => IPromise<LoopContext | null | undefined | void>;
+
 export type IFlowToolkit = {
   // events
   emit: <Event extends UseSpec<FlowSpec.Event>>(
@@ -172,9 +186,9 @@ export type IFlowToolkit = {
     value: Value,
     poolingInterval?: number | (() => number),
     maxPoolingTimout?: number | (() => number),
-  ) => Value extends UseSpec<FlowSpec.All> | StreamLike<any>
-    ? unknown[]
-    : unknown;
+  ) => Value extends UseSpec<FlowSpec.All | FlowSpec.Loop> | StreamLike<any>
+    ? IPromise<unknown[]>
+    : IPromise<unknown>;
 
   stream: <Value extends IFlowToolkitStreamingValue>(
     value: Value,
@@ -183,6 +197,11 @@ export type IFlowToolkit = {
   toArray: <Value extends IFlowToolkitStreamingValue | unknown>(
     value: Value,
   ) => IPromise<unknown[]>;
+
+  // loop
+  loop: <LoopContext extends Record<any, any>, Output = unknown>(
+    fn: ILoopFunction<LoopContext, Output>,
+  ) => UseSpec<FlowSpec.Loop>;
 
   // values
   has: (value: UseSpec<FlowSpec.State>) => boolean;
@@ -198,7 +217,9 @@ type IHandlerAsFunction<Input = unknown> = (
   input: Input,
   toolkit: IFlowToolkit,
 ) => IPromise<
-  undefined | void | UseSpec<FlowSpec.Request | FlowSpec.Value | FlowSpec.All>
+  | undefined
+  | void
+  | UseSpec<FlowSpec.Request | FlowSpec.Value | FlowSpec.All | FlowSpec.Loop>
 >;
 
 // output of this function is what will be the result of the requested command/query

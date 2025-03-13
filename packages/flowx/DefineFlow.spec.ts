@@ -300,9 +300,35 @@ describe(DefineFlow.name, () => {
             return value(user);
           })
           .then(
-            async (user, { all, value, request, waitFor, toArray, stream }) => {
+            async (
+              user,
+              { all, value, request, waitFor, toArray, stream, loop },
+            ) => {
               // pooling
               await waitFor(() => true);
+
+              // loops
+              const loopResults = await waitFor(
+                loop<{ page: number }>((fetchingContext) => {
+                  if (fetchingContext) {
+                    if (fetchingContext.page > 10) {
+                      return null;
+                    }
+
+                    return { page: fetchingContext.page + 1 };
+                  }
+                  return { page: 1 };
+                }),
+              );
+
+              const loopToStream = stream(
+                loop((loopContext, produce) => {
+                  produce('LoopIsOk');
+                  return null;
+                }),
+              );
+
+              const loopResultsFromStream = await toArray(loopToStream);
 
               // in case of request
               const resultInSync = await waitFor(
@@ -311,7 +337,9 @@ describe(DefineFlow.name, () => {
 
               // in case of stream of requests
               const resultsInSync = await waitFor(
-                stream(all([value(user), request('GetUser', { userId: '345' })])),
+                stream(
+                  all([value(user), request('GetUser', { userId: '345' })]),
+                ),
               );
 
               const streamOfResultsInSync = await stream(
@@ -321,7 +349,11 @@ describe(DefineFlow.name, () => {
               const results = await toArray(streamOfResultsInSync);
 
               // async approach
-              return all([value(user), request('GetUser', { userId: '345' })]);
+              // return all([value(user), request('GetUser', { userId: '345' })]);
+
+              // async approach for loop
+              return all(loop(() => null));
+              // return loop(() => null);
             },
           )
           .then(
