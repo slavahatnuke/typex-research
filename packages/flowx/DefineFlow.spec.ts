@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DefineFlow } from './DefineFlow';
 import { FastIncrementalId } from '@slavax/funx/fastId';
-import { toArray } from '@slavax/streamx/toArray';
 import { StreamX } from '@slavax/streamx';
 
 describe(DefineFlow.name, () => {
@@ -300,11 +299,34 @@ describe(DefineFlow.name, () => {
           .then(async (user, { value }) => {
             return value(user);
           })
-          .then(async (user, { all, value, request }) => {
-            return all([value(user), request('GetUser', { userId: '345' })]);
-          })
           .then(
-            resolve(createUser, async (userStream) => {
+            async (user, { all, value, request, waitFor, toArray, stream }) => {
+              // pooling
+              await waitFor(() => true);
+
+              // in case of request
+              const resultInSync = await waitFor(
+                request('GetUser', { userId: '345' }),
+              );
+
+              // in case of stream of requests
+              const resultsInSync = await waitFor(
+                all([value(user), request('GetUser', { userId: '345' })]),
+              );
+
+              const streamOfResultsInSync = await stream(
+                all([value(user), request('GetUser', { userId: '345' })]),
+              );
+
+              const results = await toArray(streamOfResultsInSync);
+
+              // async approach
+              return all([value(user), request('GetUser', { userId: '345' })]);
+            },
+          )
+          .then(
+            resolve(createUser, async (userStream, { toArray }) => {
+              // output of ALL: is always stream of results
               const [user1, user2] = await toArray(
                 userStream as StreamX<unknown>,
               );

@@ -160,6 +160,38 @@ export type IFlowToolkit = {
     values: Values,
   ) => UseSpec<FlowSpec.All>;
 
+  waitFor: <
+    Value extends // realtime, active values
+
+        | UseSpec<FlowSpec.Request | FlowSpec.All | FlowSpec.Value>
+        | Promise<any>
+        // pooling / in case of a function
+        | (() => IPromise<boolean>),
+  >(
+    value: Value,
+    poolingInterval?: number | (() => number),
+    maxPoolingTimout?: number | (() => number),
+  ) => Value extends UseSpec<FlowSpec.All> ? unknown[] : unknown;
+
+  stream: <
+    Value extends
+      | UseSpec<FlowSpec.Request | FlowSpec.All | FlowSpec.Value>
+      | Promise<any>
+      | StreamLike<any>,
+  >(
+    value: Value,
+  ) => IPromise<AsyncIterable<unknown>>;
+
+  toArray: <
+    Value extends
+      | UseSpec<FlowSpec.Request | FlowSpec.All | FlowSpec.Value>
+      | Promise<any>
+      | StreamLike<any>
+      | unknown,
+  >(
+    value: Value,
+  ) => unknown[];
+
   // values
   has: (value: UseSpec<FlowSpec.State>) => boolean;
   get: <Value extends UseSpec<FlowSpec.State>>(value: Value) => unknown;
