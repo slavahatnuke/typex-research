@@ -34,6 +34,48 @@ export enum FlowSpec {
 
 export type UseSpec<Type extends FlowSpec> = IUseType<IFlowSpec, Type>;
 
+type IFlowSpecWhen = IType<{
+  type: FlowSpec.When;
+  subject: UseSpec<
+    // meaning requested
+    | FlowSpec.Command
+    | FlowSpec.Query
+    | FlowSpec.Event
+
+    // full form with modifiers
+    | FlowSpec.Requested
+    | FlowSpec.Resolved
+    | FlowSpec.Rejected
+
+    // full form for events
+    | FlowSpec.Happened
+  >;
+  steps: UseSpec<FlowSpec.Then | FlowSpec.Catch>[];
+}>;
+type IFlowSpecThen = IType<{
+  type: FlowSpec.Then;
+  whenId: string;
+  handler: IThenChainingHandler;
+}>;
+type IFlowSpecCatch = IType<{
+  type: FlowSpec.Catch;
+  whenId: string;
+  handler: IThenChainingHandler;
+}>;
+type IFlowSpecHandler = IType<{
+  type: FlowSpec.Handler;
+  handler: IHandlerAsFunction;
+}>;
+type IFlowSpecAll = IType<{
+  type: FlowSpec.All;
+  values:
+    | StreamLike<UseSpec<FlowSpec.Request | FlowSpec.Value> | Promise<unknown>>
+    | UseSpec<FlowSpec.Loop>;
+}>;
+type IFlowSpecLoop = IType<{
+  type: FlowSpec.Loop;
+  handler: ILoopFunction;
+}>;
 export type IFlowSpec =
   | IType<{
       type: FlowSpec.Command;
@@ -52,38 +94,10 @@ export type IFlowSpec =
     }>
   | IFlowSpecState
   | IFlowSpecEntity
-  | IType<{
-      type: FlowSpec.When;
-      subject: UseSpec<
-        // meaning requested
-        | FlowSpec.Command
-        | FlowSpec.Query
-        | FlowSpec.Event
-
-        // full form with modifiers
-        | FlowSpec.Requested
-        | FlowSpec.Resolved
-        | FlowSpec.Rejected
-
-        // full form for events
-        | FlowSpec.Happened
-      >;
-      steps: UseSpec<FlowSpec.Then | FlowSpec.Catch>[];
-    }>
-  | IType<{
-      type: FlowSpec.Then;
-      whenId: string;
-      handler: IThenChainingHandler;
-    }>
-  | IType<{
-      type: FlowSpec.Catch;
-      whenId: string;
-      handler: IThenChainingHandler;
-    }>
-  | IType<{
-      type: FlowSpec.Handler;
-      handler: IHandlerAsFunction;
-    }>
+  | IFlowSpecWhen
+  | IFlowSpecThen
+  | IFlowSpecCatch
+  | IFlowSpecHandler
   | IType<{
       type: FlowSpec.Resolve;
       subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
@@ -122,16 +136,8 @@ export type IFlowSpec =
       parent?: UseSpec<FlowSpec.RequestId>;
     }>
   | IFlowSpecValue
-  | IType<{
-      type: FlowSpec.All;
-      values: StreamLike<
-        UseSpec<FlowSpec.Request | FlowSpec.Value> | Promise<unknown>
-      > | UseSpec<FlowSpec.Loop>;
-    }>
-  | IType<{
-      type: FlowSpec.Loop;
-      handler: ILoopFunction;
-    }>;
+  | IFlowSpecAll
+  | IFlowSpecLoop;
 
 type StreamLike<Type> =
   | AsyncIterable<Type>
@@ -203,7 +209,7 @@ export type IFlowToolkit = {
     fn: ILoopFunction<LoopContext, Output>,
   ) => UseSpec<FlowSpec.Loop>;
 
-  // values
+  // state manipulation
   has: (value: UseSpec<FlowSpec.State>) => boolean;
   get: <Value extends UseSpec<FlowSpec.State>>(value: Value) => unknown;
   set: <Value extends UseSpec<FlowSpec.State | FlowSpec.Entity>>(
@@ -238,7 +244,7 @@ export type IFlowSpecState<Type = unknown> = IType<{
   title: string;
   identity?: (value: Type) => IPromise<string>;
 }> &
-  IMetaObject<IDataType<Type>>;
+  IMetaObject<IFlowSpecDataType<Type>>;
 
 export type IFlowSpecEntity<EntityType = unknown> = IType<{
   type: FlowSpec.Entity;
@@ -246,9 +252,9 @@ export type IFlowSpecEntity<EntityType = unknown> = IType<{
   title: string;
   identity?: (value: EntityType) => IPromise<string>;
 }> &
-  IMetaObject<IDataType<EntityType>>;
+  IMetaObject<IFlowSpecDataType<EntityType>>;
 
-export type IDataType<Type = unknown> = IType<{
+export type IFlowSpecDataType<Type = unknown> = IType<{
   type: FlowSpec.DataType;
   dataType: Type;
 }>;
@@ -256,5 +262,4 @@ export type IDataType<Type = unknown> = IType<{
 export type IFlowSpecValue<Value = unknown> = IType<{
   type: FlowSpec.Value;
   value: Value;
-}> &
-  IMetaObject<IDataType<Value>>;
+}>;

@@ -6,33 +6,33 @@ type IWhenOutput = Readonly<{
   then: (input: UseSpec<FlowSpec.Then>['handler']) => IWhenOutput;
   catch: (input: UseSpec<FlowSpec.Catch>['handler']) => IWhenOutput;
 }>;
-export type IFlowDefinitionLanguage = {
+export type ISpecifyFlowLanguage = {
   command: (
     name: string,
     title?: string,
-  ) => UseSpec<FlowSpec.Command> & IFlowDefinitionMeta; // command
+  ) => UseSpec<FlowSpec.Command> & ISpecifyFlowMeta; // command
 
   event: (
     name: string,
     title?: string,
-  ) => UseSpec<FlowSpec.Event> & IFlowDefinitionMeta; // event
+  ) => UseSpec<FlowSpec.Event> & ISpecifyFlowMeta; // event
 
   query: (
     name: string,
     title?: string,
-  ) => UseSpec<FlowSpec.Query> & IFlowDefinitionMeta; // query
+  ) => UseSpec<FlowSpec.Query> & ISpecifyFlowMeta; // query
 
   state: <Type = unknown>(
     name: string,
     title?: string,
     identity?: (entity: Type) => IPromise<string>,
-  ) => IFlowSpecState<Type> & IFlowDefinitionMeta; // value
+  ) => IFlowSpecState<Type> & ISpecifyFlowMeta; // value
 
   entity: <Type = unknown>(
     name: string,
     title?: string,
     identity?: (entity: Type) => IPromise<string>,
-  ) => IFlowSpecEntity<Type> & IFlowDefinitionMeta; // value
+  ) => IFlowSpecEntity<Type> & ISpecifyFlowMeta; // value
 
   when: <Subject extends UseSpec<FlowSpec.When>['subject']>(
     subject: Subject,
@@ -69,7 +69,7 @@ export type IFlowDefinitionLanguage = {
   ) => UseSpec<FlowSpec.Rejected>; // rejected
 };
 
-type IFlowDefinition = UseSpec<
+type ISpecifyFlowDefinition = UseSpec<
   | FlowSpec.Command
   | FlowSpec.Query
   | FlowSpec.Event
@@ -78,37 +78,37 @@ type IFlowDefinition = UseSpec<
   | FlowSpec.Entity
 >;
 
-export type IFlowDefinitionMeta = Readonly<{ id: string; meta: unknown }>;
-export type IDefineFlowOutput = IFlowDefinition & IFlowDefinitionMeta;
+export type ISpecifyFlowMeta = Readonly<{ id: string; meta: unknown }>;
+export type ISpecifyFlowOutput = ISpecifyFlowDefinition & ISpecifyFlowMeta;
 
-type UseDefineFlowOutput<Type extends IDefineFlowOutput['type']> = IUseType<
-  IDefineFlowOutput,
+type UseSpecifyFlowOutput<Type extends ISpecifyFlowOutput['type']> = IUseType<
+  ISpecifyFlowOutput,
   Type
 >;
 
-export type IDefineFlow = (
-  specifier: (language: IFlowDefinitionLanguage) => unknown,
-) => IDefineFlowOutput[];
+export type ISpecifyFlow = (
+  specifier: (language: ISpecifyFlowLanguage) => unknown,
+) => ISpecifyFlowOutput[];
 
-export function DefineFlow<Meta = undefined>(
+export function SpecifyFlow<Meta = undefined>(
   meta: Meta,
   { NewId = fastId }: Partial<{ NewId: INewId }> = {},
-): IDefineFlow {
+): ISpecifyFlow {
   return function defineFlow(
-    specifier: (language: IFlowDefinitionLanguage) => unknown,
+    specifier: (language: ISpecifyFlowLanguage) => unknown,
   ) {
-    const outputs: IDefineFlowOutput[] = [];
+    const outputs: ISpecifyFlowOutput[] = [];
 
-    function throwErrorIfNotSpecifying() {
+    function throwErrorIfNotSpecifying(value: any) {
       if (!specifying) {
-        throw ImpossibleToSpecifyError({});
+        throw SpecifyingPhaseFinishedError({ value });
       }
     }
 
-    const add = <Type extends IFlowDefinition>(
+    const add = <Type extends ISpecifyFlowDefinition>(
       output: Type,
-    ): Type & IFlowDefinitionMeta => {
-      throwErrorIfNotSpecifying();
+    ): Type & ISpecifyFlowMeta => {
+      throwErrorIfNotSpecifying(output);
 
       const item = {
         ...output,
@@ -122,11 +122,11 @@ export function DefineFlow<Meta = undefined>(
     };
 
     const WhenOutput = (
-      when: UseDefineFlowOutput<FlowSpec.When>,
+      when: UseSpecifyFlowOutput<FlowSpec.When>,
     ): IWhenOutput => {
       return {
         then: (input) => {
-          throwErrorIfNotSpecifying();
+          throwErrorIfNotSpecifying(input);
 
           when.steps.push({
             type: FlowSpec.Then,
@@ -137,7 +137,7 @@ export function DefineFlow<Meta = undefined>(
           return WhenOutput(when);
         },
         catch: (input) => {
-          throwErrorIfNotSpecifying();
+          throwErrorIfNotSpecifying(input);
 
           when.steps.push({
             type: FlowSpec.Catch,
@@ -243,14 +243,16 @@ export function DefineFlow<Meta = undefined>(
   };
 }
 
-enum DefineFlowError {
-  ImpossibleToSpecifyError = 'ImpossibleToSpecifyError',
+export enum SpecifyFlowError {
+  SpecifyingPhaseFinishedError = 'SpecifyingPhaseFinishedError',
 }
 
-type IDefineFlowError = IType<{
-  type: DefineFlowError.ImpossibleToSpecifyError;
+type ISpecifyingPhaseFinishedError = IType<{
+  type: SpecifyFlowError.SpecifyingPhaseFinishedError;
+  value: any;
 }>;
 
-const ImpossibleToSpecifyError = NewError<IDefineFlowError>(
-  DefineFlowError.ImpossibleToSpecifyError,
-);
+export const SpecifyingPhaseFinishedError =
+  NewError<ISpecifyingPhaseFinishedError>(
+    SpecifyFlowError.SpecifyingPhaseFinishedError,
+  );
