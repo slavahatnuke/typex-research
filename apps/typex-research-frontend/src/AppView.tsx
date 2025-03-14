@@ -6,15 +6,13 @@ import { IType, SubscribeService } from '@slavax/typex';
 import { App, IApp } from '@typex-reserach/app';
 import { HttpAsService } from '@slavax/typex/HttpAsService';
 import { sequence } from '@slavax/streamx/sequence';
-import { map } from '@slavax/streamx/map';
 import { tap } from '@slavax/streamx/tap';
-import { batch } from '@slavax/streamx/batch';
-import { flat } from '@slavax/streamx/flat';
 import { run } from '@slavax/streamx/run';
 import { of } from '@slavax/streamx/of';
 import { SpeedTest } from '@slavax/funx/speed-test';
-import { relaxedTimeout } from '@slavax/streamx/relaxedTimeout';
 import { relaxedBatch } from '@slavax/streamx/relaxedBatch';
+import { useList } from './lib/useList';
+import { FastIncrementalId } from '@slavax/funx/fastId';
 
 const serviceUrl = 'http://localhost:4000/';
 
@@ -47,9 +45,27 @@ function FrontendContext(
   };
 }
 
+const id = FastIncrementalId();
+
 function AppView() {
   const [message, setMessage] = useState<string>('');
   const [notifications, setNotifications] = useState<string[]>([]);
+
+  const [items, itemsApi] = useList(
+    (item: { id: number; name: string; age: number }) => String(item.id),
+    [
+      {
+        id: id(),
+        name: 'John',
+        age: 25,
+      },
+      {
+        id: id(),
+        name: 'Jane',
+        age: 22,
+      },
+    ],
+  );
 
   function onNotification(msg: string) {
     setNotifications((prev) => [...prev, msg]);
@@ -99,7 +115,38 @@ function AppView() {
       console.log(await service(App.Hello, {}, FrontendContext()));
     })().catch((error) => console.error(error));
   }, []);
-  return <div className="App">hey</div>;
+  return (
+    <div className="App">
+      <h2>Hi, I am a frontend app</h2>
+
+      <button
+        onClick={() =>
+          itemsApi.add({
+            id: id(),
+            age: Math.floor(Math.random() * 100),
+            name: `John Doe ${Math.floor(Math.random() * 100)}`,
+          })
+        }
+      >
+        add
+      </button>
+      <ul>
+        {items.map((item) => (
+          <li key={item.id}>
+            <button onClick={() => itemsApi.remove(item)}>del</button>{' '}
+            <button
+              onClick={() =>
+                itemsApi.update({ ...item, name: `${item.name} Updated` })
+              }
+            >
+              upd
+            </button>{' '}
+            {JSON.stringify(item, null, 2)}{' '}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 export default AppView;
