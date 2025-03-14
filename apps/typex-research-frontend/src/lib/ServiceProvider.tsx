@@ -4,12 +4,14 @@ import {
   IGetServiceEvents,
   IPromise,
   IService,
+  IServiceEvent,
   IServiceInput,
   IServiceOutput,
   IType,
+  SubscribeService,
 } from '@slavax/typex';
 import { NewReactProvider } from './NewReactProvider';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { assert } from '@slavax/funx/assert';
 import {
   ILoaderState,
@@ -18,6 +20,7 @@ import {
   LoaderStateResolved,
   LoaderStateResolving,
 } from './useLoader';
+import { mem } from '@slavax/funx/mem';
 
 export function ServiceProvider<
   ApiSpecification extends IType,
@@ -100,9 +103,33 @@ export function ServiceProvider<
       responseState.loader,
     ] as const;
   };
+
   // useServiceEvents
 
-  const useServiceEvents = () => {};
+  const subscribeService = SubscribeService(service);
+  const useServiceEvents = <Type extends Events['type']>(
+    events: ReadonlyArray<Type>,
+    subscriber: (
+      event: IServiceEvent<ApiSpecification, Context, Events>['event'],
+      serviceEvent: IServiceEvent<ApiSpecification, Context, Events>,
+    ) => IPromise<unknown>,
+  ) => {
+    const eventsSet = useMemo(() => mem(() => new Set(events)), []);
+
+    useEffect(() => {
+      const unsubscribe = subscribeService(async (serviceEvent) => {
+        const { event } = serviceEvent;
+
+        if (eventsSet().has(event.type)) {
+          await subscriber(event, serviceEvent);
+        }
+      });
+
+      return () => {
+        unsubscribe();
+      };
+    }, []);
+  };
 
   return [
     ServiceInstanceProvider,

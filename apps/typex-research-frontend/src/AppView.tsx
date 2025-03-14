@@ -1,16 +1,25 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import { App } from '@typex-reserach/app';
 import { useList } from './lib/useList';
 import { FastIncrementalId } from '@slavax/funx/fastId';
 import { useAppContext } from './AppContextProvider';
-import { useServiceApi } from './AppService';
+import { useAppApi, useAppEvents } from './AppService';
 
 const NewId = FastIncrementalId();
 
 function AppView() {
   const [{ appName }, setContext] = useAppContext();
-  const [sayHello, saidHello, sayHelloLoader] = useServiceApi(App.Hello);
+  const [sayHello, saidHello, sayHelloLoader] = useAppApi(App.Hello);
+
+  const [someValue, setSomeValue] = useState<any>(null);
+
+  useAppEvents([
+    App.SaidHello
+  ], (event) => {
+    console.log('event>>>', event);
+    setSomeValue(event);
+  })
 
   const [users, usersApi] = useList(
     (item: { id: number; name: string; age: number }) => String(item.id),
@@ -69,8 +78,14 @@ function AppView() {
         ))}
       </ul>
 
+      <h4>Loading</h4>
       {sayHelloLoader.loading && 'Loading...'}
+      {sayHelloLoader.loaded && '[LOADED]'}
+      {`[STATUS:${sayHelloLoader.type}]`}
+      <h4>Response</h4>
       {saidHello && <pre>{JSON.stringify(saidHello, null, 2)}</pre>}
+      <h4>Event</h4>
+      <pre>{JSON.stringify(someValue, null, 2)}</pre>
     </div>
   );
 }
