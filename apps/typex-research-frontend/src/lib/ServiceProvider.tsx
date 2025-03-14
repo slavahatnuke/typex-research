@@ -45,7 +45,14 @@ export function ServiceProvider<
     NewReactProvider<IService<ApiSpecification, Context, Events>>(name);
 
   // useService
-  const useServiceApi = <Type extends ApiSpecification['type']>(type: Type) => {
+  const useServiceApi = <Type extends ApiSpecification['type']>(
+    type: Type,
+    {
+      keepResponseOnRequest = true,
+    }: Partial<{
+      keepResponseOnRequest: boolean;
+    }> = {},
+  ) => {
     const [responseState, setResponseState] = useState<{
       response: IServiceOutput<ApiSpecification, Type> | null;
       loader: ILoaderState<IServiceOutput<ApiSpecification, Type>, unknown>;
@@ -61,7 +68,7 @@ export function ServiceProvider<
       ) => {
         try {
           setResponseState({
-            response: null,
+            response: keepResponseOnRequest ? responseState.response : null,
             loader: LoaderStateResolving(),
           });
 
