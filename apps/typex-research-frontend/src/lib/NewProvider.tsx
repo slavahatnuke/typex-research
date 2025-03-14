@@ -11,9 +11,9 @@ export function NewProvider<State = unknown>(name: string) {
     NewReactProvider<IProviderContext<State>>(name);
 
   const Provider = ({
-    children,
-    value,
-  }: {
+                      children,
+                      value,
+                    }: {
     children: React.ReactNode;
     value: State;
   }) => {
@@ -27,10 +27,10 @@ export function NewProvider<State = unknown>(name: string) {
     return <RootProvider value={memo}>{children}</RootProvider>;
   };
 
-  const useContext = () => {
+  const useProvider = () => {
     const context = useRootProvider();
-    return [context.state, context.setState] as const;
+    return useMemo(() => [context.state, context.setState] as const, [context.state, context.setState]);
   };
 
-  return [Provider, useContext] as const;
+  return [Provider, useProvider] as const;
 }

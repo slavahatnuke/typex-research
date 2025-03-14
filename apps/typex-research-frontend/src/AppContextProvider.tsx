@@ -2,4 +2,4 @@ import { NewProvider } from './lib/NewProvider';
 
 export const [AppContextProvider, useAppContext] = NewProvider<{
   appName: string;
-}>('app');
+}>('AppContext');
