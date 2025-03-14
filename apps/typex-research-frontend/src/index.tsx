@@ -1,18 +1,19 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import AppView, { AppProvider } from './AppView';
+import AppView from './AppView';
 import reportWebVitals from './reportWebVitals';
+import { AppContextProvider } from './AppContextProvider';
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
+  document.getElementById('root') as HTMLElement,
 );
 root.render(
   <React.StrictMode>
-    <AppProvider value={{appName: 'MyApp'}} >
+    <AppContextProvider value={{ appName: 'MyApp' }}>
       <AppView />
-    </AppProvider>
-  </React.StrictMode>
+    </AppContextProvider>
+  </React.StrictMode>,
 );
 
 // If you want to start measuring performance in your app, pass a function

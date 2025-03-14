@@ -13,7 +13,7 @@ import { SpeedTest } from '@slavax/funx/speed-test';
 import { relaxedBatch } from '@slavax/streamx/relaxedBatch';
 import { useList } from './lib/useList';
 import { FastIncrementalId } from '@slavax/funx/fastId';
-import { NewProvider } from './lib/NewProvider';
+import { useAppContext } from './AppContextProvider';
 
 const serviceUrl = 'http://localhost:4000/';
 
@@ -47,10 +47,10 @@ function FrontendContext(
 }
 
 const id = FastIncrementalId();
-export const [AppProvider, useAppProvider] = NewProvider<{appName: string}>('app');
 
 function AppView() {
-  const { appName } = useAppProvider();
+  const [{ appName }, setContext] = useAppContext();
+
   const [message, setMessage] = useState<string>('');
   const [notifications, setNotifications] = useState<string[]>([]);
 
@@ -121,6 +121,9 @@ function AppView() {
   return (
     <div className="App">
       <h2>Hi, I am a frontend app {appName}</h2>
+      <button onClick={() => setContext({ appName: `${appName} Updated` })}>
+        change app name
+      </button>
 
       <button
         onClick={() =>

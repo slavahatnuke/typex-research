@@ -1,35 +1,36 @@
-import React from 'react';
+import React, { Dispatch, useMemo, useState } from 'react';
+import { NewReactProvider } from './NewReactProvider';
 
-export function NewProvider<Context extends Record<any, any>>(name: string) {
-  const noContextReason = `Provider:${name}:NO_CONTEXT`;
-  const noContextSymbol = Symbol(noContextReason);
+type IProviderContext<State = unknown> = {
+  state: State;
+  setState: Dispatch<State | ((prevState: State) => State)>;
+};
 
-  const ProviderContext: React.Context<Context> = React.createContext<Context>(
-    noContextSymbol as unknown as Context,
-  );
+export function NewProvider<State = unknown>(name: string) {
+  const [RootProvider, useRootProvider] =
+    NewReactProvider<IProviderContext<State>>(name);
 
   const Provider = ({
     children,
     value,
   }: {
     children: React.ReactNode;
-    value: Context;
+    value: State;
   }) => {
-    return (
-      <ProviderContext.Provider value={value}>
-        {children}
-      </ProviderContext.Provider>
+    const [state, setState] = useState<State>(value);
+
+    const memo = useMemo<IProviderContext<State>>(
+      () => ({ state, setState }),
+      [state, setState],
     );
+
+    return <RootProvider value={memo}>{children}</RootProvider>;
   };
 
-  const useProvider = () => {
-    const context = React.useContext(ProviderContext);
-    // @ts-ignore
-    if (context === noContextSymbol) {
-      throw new Error(noContextReason);
-    }
-    return context;
+  const useContext = () => {
+    const context = useRootProvider();
+    return [context.state, context.setState] as const;
   };
 
-  return [Provider, useProvider] as const;
+  return [Provider, useContext] as const;
 }
