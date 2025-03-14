@@ -119,7 +119,9 @@ type IErrorAction = {
 };
 
 export type IError<Type extends IType> = IMetaType<
-  Error & { toJSON: Type & Error } & Type,
+  Error & {
+    toJSON: IType<{ type: Type['type']; data: Type }> & Error;
+  } & IType<{ type: Type['type']; data: Type }>,
   IErrorAction | IErrorPayload<Type>
 >;
 
@@ -149,10 +151,12 @@ export function NewError<Type extends IType>(
     readonly type: Type['type'] = type;
 
     readonly origin?: Error;
+    readonly data: Type;
 
     constructor(payload: INewErrorPayload<Type>, origin?: Error) {
       super(type);
-      Object.assign(this, payload);
+      // @ts-ignore
+      this.data = { ...payload, type };
       this.origin = origin;
     }
 
@@ -162,12 +166,13 @@ export function NewError<Type extends IType>(
         type: this.type,
         name: this.name,
         stack: this.stack,
+        data: this.data,
       };
     }
   }
 
   return (payload, origin?: Error) =>
-    new _Error(payload, origin) as IError<Type>;
+    new _Error(payload, origin) as unknown as IError<Type>;
 }
 
 type IGiveErrorPayload<
@@ -377,6 +382,7 @@ export function Service<
         const fn = functions[type];
         if (fn) {
           // @ts-ignore
+          // @ts-ignore
           return await fn(
             //@ts-ignore
             {
@@ -384,38 +390,50 @@ export function Service<
 
               type,
 
-              get [_emitter]() {
-                return async (eventType: string, event: IEvent<any>) => {
-                  const _event = { ...event, type: eventType };
+              [_emitter]: async (eventType: string, event: IEvent<any>) => {
+                const _event = { ...event, type: eventType };
 
-                  await publish({
-                    // @ts-ignore
-                    event: _event,
-                    context: context,
-                    // @ts-ignore
-                    input: _cleanServiceInput({ ...input, type }),
-                  });
+                await publish({
+                  // @ts-ignore
+                  event: _event,
+                  context: context,
+                  // @ts-ignore
+                  input: _cleanServiceInput({ ...input, type }),
+                });
 
-                  return _event;
-                };
+                return _event;
               },
 
-              get [_caller]() {
-                return async (inputType: string, input: IType) =>
-                  await serviceHandler(
+              [_caller]: async (
+                base: IType,
+                inputType: string,
+                input: IType,
+                nextContext?: Context,
+              ) => {
+                // @ts-ignore
+                if (!base[_context]) {
+                  throw ServiceCallerContextNotFound({
+                    base,
                     inputType,
-                    // @ts-ignore
-                    {
-                      ...input,
-                      type: inputType,
-                    },
+                    input,
+                    inputContext: _context,
                     context,
-                  );
+                  });
+                }
+
+                return await serviceHandler(
+                  inputType,
+                  // @ts-ignore
+                  _cleanServiceInput({
+                    ...input,
+                    type: inputType,
+                  }),
+                  // @ts-ignore
+                  nextContext ?? base[_context],
+                );
               },
 
-              get [_context]() {
-                return context;
-              },
+              [_context]: context,
             },
           );
         } else {
@@ -471,28 +489,32 @@ export function GetServiceContext<Context extends IContext | void = void>(): <
   };
 }
 
-export type IServiceCall<ApiSpecification extends IType> = <
-  InputType extends ApiSpecification['type'],
->(
+export type IServiceCall<
+  ApiSpecification extends IType,
+  Context extends IContext | void = void,
+> = <InputType extends ApiSpecification['type']>(
   base: IBase,
   inputType: InputType,
   input: IServiceInput<ApiSpecification, InputType>,
+  context?: Context,
 ) => Promise<IServiceOutput<ApiSpecification, InputType>>;
 
 export function ServiceCall<
   ApiSpecification extends IType,
->(): IServiceCall<ApiSpecification> {
-  return async (base, inputType, input) => {
+  Context extends IContext | void = void,
+>(): IServiceCall<ApiSpecification, Context> {
+  return async (base, inputType, input, _context?: Context) => {
     // @ts-ignore
     const caller = base[_caller];
 
     if (caller) {
-      return await caller(inputType, input);
+      return await caller(base, inputType, input, _context);
     } else {
       throw ServiceCallerNotFound({
         base,
         inputType,
         input,
+        context: _context,
       });
     }
   };
@@ -503,6 +525,7 @@ export enum ServiceError {
   ServiceFunctionNotFound = 'ServiceFunctionNotFound',
   ServiceCallerNotFound = 'ServiceCallerNotFound',
   ServiceEventEmitterNotFound = 'ServiceEventEmitterNotFound',
+  ServiceCallerContextNotFound = 'ServiceCallerContextNotFound',
 }
 
 export type IServiceError = IError<{
@@ -515,6 +538,16 @@ export type IServiceCallerNotFound = IError<{
   inputType: string;
   base: IType | any;
   input: IType | any;
+  context: IContext | any;
+}>;
+
+export type IServiceCallerContextNotFound = IError<{
+  type: ServiceError.ServiceCallerContextNotFound;
+  base: IType | any;
+  inputType: string;
+  input: IType | any;
+  inputContext: IContext | any;
+  context: IContext | any;
 }>;
 
 export const ServiceFunctionNotFound = NewError<IServiceError>(
@@ -524,6 +557,10 @@ export const ServiceFunctionNotFound = NewError<IServiceError>(
 export const ServiceCallerNotFound = NewError<IServiceCallerNotFound>(
   ServiceError.ServiceCallerNotFound,
 );
+export const ServiceCallerContextNotFound =
+  NewError<IServiceCallerContextNotFound>(
+    ServiceError.ServiceCallerContextNotFound,
+  );
 
 export type IServiceEventEmitterNotFound = IError<{
   type: ServiceError.ServiceEventEmitterNotFound;

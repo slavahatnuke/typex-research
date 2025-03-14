@@ -44,11 +44,91 @@ const GetServiceEventsTypeTest1: IUserEvents = {
 };
 
 describe(Service.name, () => {
+  it('context works', async () => {
+    // helpers to emit events and call other functions in service
+    const emit = EmitServiceEvent<IUserEvents>();
+    const call = ServiceCall<IUserActions, IServiceContext>();
+    type IServiceContext = IContext<{ authToken: string; traceId: string }>;
+    const getContext = GetServiceContext<IServiceContext>();
+
+    // functions of the service
+    function UserFunctions(): IServiceFunctions<IUserActions> {
+      return ServiceFunctions<IUserActions>({
+        CreateUser: async (input) => {
+          const context = getContext(input);
+          expect(context).toEqual(serviceContext);
+
+          // test to call local function
+          const user = await call(
+            input,
+            'GetUser',
+            {
+              userId: 'userId123',
+            },
+            {
+              ...context,
+              traceId: `${context.traceId}.asNextTraceId`,
+            },
+          );
+
+          // event definition
+          const event: IUserCreated = {
+            type: 'UserCreated',
+            userId: user.id,
+          };
+
+          // emit event and return it
+          return await emit(input, event.type, event);
+        },
+        GetUser: async (input) => {
+          const context = getContext(input);
+          expect(context).toEqual({
+            ...serviceContext,
+            traceId: `${serviceContext.traceId}.asNextTraceId`,
+          });
+
+          // return a test user
+          return {
+            type: 'User',
+            id: input.userId,
+            email: 'email',
+            name: 'name',
+          };
+        },
+      });
+    }
+
+    // api
+    const service = Service<IUserActions, IServiceContext>({
+      ...UserFunctions(),
+    });
+
+    const subscribe = SubscribeService(service);
+
+    // create a user
+    const serviceContext: IServiceContext = {
+      authToken: 'authToken',
+      traceId: 'traceId1',
+    };
+
+    const userCreated = await service(
+      'CreateUser',
+      {
+        email: 'email',
+        name: 'name',
+      },
+      serviceContext,
+    );
+    expect(userCreated).toEqual({
+      type: 'UserCreated',
+      userId: 'userId123',
+    });
+  });
   it('works', async () => {
     // helpers to emit events and call other functions in service
     const emit = EmitServiceEvent<IUserEvents>();
-    const call = ServiceCall<IUserActions>();
-    type IServiceContext = IContext<{ authToken: string }>;
+    const call = ServiceCall<IUserActions, IServiceContext>();
+    type IServiceContext = IContext<{ authToken: string; traceId: string }>;
     const getContext = GetServiceContext<IServiceContext>();
 
     // functions of the service
@@ -102,7 +182,10 @@ describe(Service.name, () => {
     expect(events()).toEqual([]);
 
     // create a user
-    const serviceContext: IServiceContext = { authToken: 'authToken' };
+    const serviceContext: IServiceContext = {
+      authToken: 'authToken',
+      traceId: 'traceId1',
+    };
 
     const userCreated = await service(
       'CreateUser',
