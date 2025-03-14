@@ -10,7 +10,7 @@ const NewId = FastIncrementalId();
 
 function AppView() {
   const [{ appName }, setContext] = useAppContext();
-  const [saidHello, sayHello] = useServiceApi(App.Hello);
+  const [sayHello, saidHello, sayHelloLoader] = useServiceApi(App.Hello);
 
   const [users, usersApi] = useList(
     (item: { id: number; name: string; age: number }) => String(item.id),
@@ -69,7 +69,8 @@ function AppView() {
         ))}
       </ul>
 
-      {JSON.stringify(saidHello)}
+      {sayHelloLoader.loading && 'Loading...'}
+      {saidHello && <pre>{JSON.stringify(saidHello, null, 2)}</pre>}
     </div>
   );
 }

@@ -7,12 +7,17 @@ import {
   IServiceInput,
   IServiceOutput,
   IType,
-  IUseType,
 } from '@slavax/typex';
 import { NewReactProvider } from './NewReactProvider';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { assert } from '@slavax/funx/assert';
-import { Defer, DeferData } from '@slavax/funx/defer';
+import {
+  ILoaderState,
+  LoaderStatePending,
+  LoaderStateRejected,
+  LoaderStateResolved,
+  LoaderStateResolving,
+} from './useLoader';
 
 export function ServiceProvider<
   ApiSpecification extends IType,
@@ -22,37 +27,77 @@ export function ServiceProvider<
   name: string,
   service: IService<ApiSpecification, Context, Events>,
   getContext: Context extends void ? void : () => IPromise<Context>,
+  {
+    onRequestError = async (errorContext) =>
+      console.error(errorContext.error, errorContext),
+  }: Partial<{
+    onRequestError: (errorContext: {
+      error: unknown;
+      request: ApiSpecification;
+      context: Context | void;
+    }) => IPromise<unknown>;
+  }> = {},
 ) {
-  const [RootServiceProvider, userServiceInstance] =
+  const [ServiceInstanceProvider, useServiceInstance] =
     NewReactProvider<IService<ApiSpecification, Context, Events>>(name);
 
   // useService
   const useServiceApi = <Type extends ApiSpecification['type']>(type: Type) => {
-    const instance = userServiceInstance() as IService<
-      IUseType<ApiSpecification, Type>,
-      Context,
-      Events
-    >;
-    const [response, setResponse] = useState<IServiceOutput<ApiSpecification, Type> | null>(null);
+    const [responseState, setResponseState] = useState<{
+      response: IServiceOutput<ApiSpecification, Type> | null;
+      loader: ILoaderState<IServiceOutput<ApiSpecification, Type>, unknown>;
+    }>({
+      response: null,
+      loader: LoaderStatePending(),
+    });
+
     return [
-      response,
-      async (input: IServiceInput<ApiSpecification, Type>, context?: Context) => {
-        const defer = Defer<typeof response>();
-
+      async (
+        input: IServiceInput<ApiSpecification, Type>,
+        context?: Context,
+      ) => {
         try {
-          setResponse(null)
-          assert(getContext, `${ServiceProvider.name}:getContext is not defined`);
-          const output = await service(type, input, context ?? await getContext());
-          setResponse(output);
-          defer.resolve(output);
-        } catch (error) {
-          setResponse(null)
-          defer.reject(error);
-          console.log(error);
-        }
+          setResponseState({
+            response: null,
+            loader: LoaderStateResolving(),
+          });
 
-        return await defer.promise;
+          assert(
+            getContext,
+            `${ServiceProvider.name}:getContext is not defined`,
+          );
+
+          const output = await service(
+            type,
+            input,
+            context ?? (await getContext()),
+          );
+
+          setResponseState({
+            response: output,
+            loader: LoaderStateResolved(output),
+          });
+
+          return output;
+        } catch (error) {
+          setResponseState({
+            response: null,
+            loader: LoaderStateRejected(error),
+          });
+
+          await onRequestError({
+            error,
+            // @ts-ignore
+            request: { ...input, type },
+            // @ts-ignore
+            context: context ?? (await getContext()),
+          });
+
+          throw error;
+        }
       },
+      responseState.response,
+      responseState.loader,
     ] as const;
   };
   // useServiceEvents
@@ -60,9 +105,9 @@ export function ServiceProvider<
   const useServiceEvents = () => {};
 
   return [
-    RootServiceProvider,
+    ServiceInstanceProvider,
     useServiceApi,
     useServiceEvents,
-    userServiceInstance,
+    useServiceInstance,
   ] as const;
 }
