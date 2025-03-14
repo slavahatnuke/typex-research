@@ -5,6 +5,7 @@ import { useList } from './lib/useList';
 import { FastIncrementalId } from '@slavax/funx/fastId';
 import { useAppContext } from './AppContextProvider';
 import { useAppApi, useAppEvents } from './AppService';
+import { caseNever } from '@slavax/funx/never';
 
 const NewId = FastIncrementalId();
 
@@ -15,8 +16,13 @@ function AppView() {
   const [someValue, setSomeValue] = useState<any>(null);
 
   useAppEvents([App.SaidHello], (event) => {
-    console.log('event>>>', event);
-    setSomeValue(event);
+    switch (event.type) {
+      case App.SaidHello:
+        setSomeValue(event);
+        break;
+      default:
+        return caseNever(event.type);
+    }
   });
 
   const [users, usersApi] = useList(
