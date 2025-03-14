@@ -14,11 +14,11 @@ import { NewReactProvider } from './NewReactProvider';
 import { useEffect, useMemo, useState } from 'react';
 import { assert } from '@slavax/funx/assert';
 import {
-  ILoaderState,
-  LoaderStatePending,
-  LoaderStateRejected,
-  LoaderStateResolved,
-  LoaderStateResolving,
+  ILoaderStatus,
+  LoaderStatusPending,
+  LoaderStatusRejected,
+  LoaderStatusResolved,
+  LoaderStatusResolving,
 } from './useLoader';
 import { mem } from '@slavax/funx/mem';
 
@@ -55,10 +55,10 @@ export function ServiceProvider<
   ) => {
     const [responseState, setResponseState] = useState<{
       response: IServiceOutput<ApiSpecification, Type> | null;
-      loader: ILoaderState<IServiceOutput<ApiSpecification, Type>, unknown>;
+      status: ILoaderStatus<IServiceOutput<ApiSpecification, Type>, unknown>;
     }>({
       response: null,
-      loader: LoaderStatePending(),
+      status: LoaderStatusPending(),
     });
 
     return [
@@ -69,7 +69,7 @@ export function ServiceProvider<
         try {
           setResponseState({
             response: keepResponseOnRequest ? responseState.response : null,
-            loader: LoaderStateResolving(),
+            status: LoaderStatusResolving(),
           });
 
           assert(
@@ -85,14 +85,14 @@ export function ServiceProvider<
 
           setResponseState({
             response: output,
-            loader: LoaderStateResolved(output),
+            status: LoaderStatusResolved(output),
           });
 
           return output;
         } catch (error) {
           setResponseState({
             response: null,
-            loader: LoaderStateRejected(error),
+            status: LoaderStatusRejected(error),
           });
 
           await onRequestError({
@@ -107,7 +107,7 @@ export function ServiceProvider<
         }
       },
       responseState.response,
-      responseState.loader,
+      responseState.status,
     ] as const;
   };
 

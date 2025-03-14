@@ -1,7 +1,7 @@
 import { IType, IUseType } from '@slavax/typex';
 import { useState } from 'react';
 
-export enum LoaderState {
+export enum LoaderStatus {
   Pending = 'Pending',
   Resolving = 'Resolving',
   Resolved = 'Resolved',
@@ -11,7 +11,7 @@ export enum LoaderState {
 type New<
   DataType,
   ErrorType,
-  T extends IType<{ type: LoaderState }> & {
+  T extends IType<{ type: LoaderStatus }> & {
     pending: boolean;
     resolving: boolean;
     resolved: boolean;
@@ -29,12 +29,12 @@ type New<
   },
 > = IType<T>;
 
-export type ILoaderState<DataType, ErrorType> =
+export type ILoaderStatus<DataType, ErrorType> =
   | New<
       DataType,
       ErrorType,
       {
-        type: LoaderState.Pending;
+        type: LoaderStatus.Pending;
 
         resolving: false;
         resolved: false;
@@ -53,7 +53,7 @@ export type ILoaderState<DataType, ErrorType> =
       DataType,
       ErrorType,
       {
-        type: LoaderState.Resolving;
+        type: LoaderStatus.Resolving;
         pending: false;
         resolving: true;
         resolved: false;
@@ -70,7 +70,7 @@ export type ILoaderState<DataType, ErrorType> =
       DataType,
       ErrorType,
       {
-        type: LoaderState.Resolved;
+        type: LoaderStatus.Resolved;
         pending: false;
         resolving: false;
         resolved: true;
@@ -87,7 +87,7 @@ export type ILoaderState<DataType, ErrorType> =
       DataType,
       ErrorType,
       {
-        type: LoaderState.Rejected;
+        type: LoaderStatus.Rejected;
         pending: false;
         resolving: false;
         resolved: false;
@@ -102,29 +102,29 @@ export type ILoaderState<DataType, ErrorType> =
     >;
 
 export function useLoader<DataType, ErrorType>(
-  initialState?: ILoaderState<DataType, ErrorType>,
+  initialState?: ILoaderStatus<DataType, ErrorType>,
 ) {
-  const [state, setState] = useState<ILoaderState<DataType, ErrorType>>(
-    initialState ?? LoaderStatePending(),
+  const [state, setState] = useState<ILoaderStatus<DataType, ErrorType>>(
+    initialState ?? LoaderStatusPending(),
   );
 
   const resolve = (data: DataType) => {
-    setState(LoaderStateResolved(data));
+    setState(LoaderStatusResolved(data));
   };
 
   const reject = (error: ErrorType) => {
-    setState(LoaderStateRejected(error));
+    setState(LoaderStatusRejected(error));
   };
 
   return [state, resolve, reject] as const;
 }
 
-export function LoaderStatePending<DataType, ErrorType>(): IUseType<
-  ILoaderState<DataType, ErrorType>,
-  LoaderState.Pending
+export function LoaderStatusPending<DataType, ErrorType>(): IUseType<
+  ILoaderStatus<DataType, ErrorType>,
+  LoaderStatus.Pending
 > {
   return {
-    type: LoaderState.Pending,
+    type: LoaderStatus.Pending,
     pending: true,
     resolved: false,
     resolving: false,
@@ -138,12 +138,12 @@ export function LoaderStatePending<DataType, ErrorType>(): IUseType<
   };
 }
 
-export function LoaderStateResolving<DataType, ErrorType>(): IUseType<
-  ILoaderState<DataType, ErrorType>,
-  LoaderState.Resolving
+export function LoaderStatusResolving<DataType, ErrorType>(): IUseType<
+  ILoaderStatus<DataType, ErrorType>,
+  LoaderStatus.Resolving
 > {
   return {
-    type: LoaderState.Resolving,
+    type: LoaderStatus.Resolving,
     resolved: false,
     pending: false,
     resolving: true,
@@ -157,11 +157,11 @@ export function LoaderStateResolving<DataType, ErrorType>(): IUseType<
   };
 }
 
-export function LoaderStateResolved<DataType, ErrorType>(
+export function LoaderStatusResolved<DataType, ErrorType>(
   data: DataType,
-): IUseType<ILoaderState<DataType, ErrorType>, LoaderState.Resolved> {
+): IUseType<ILoaderStatus<DataType, ErrorType>, LoaderStatus.Resolved> {
   return {
-    type: LoaderState.Resolved,
+    type: LoaderStatus.Resolved,
     resolved: true,
     pending: false,
     resolving: false,
@@ -175,11 +175,11 @@ export function LoaderStateResolved<DataType, ErrorType>(
   };
 }
 
-export function LoaderStateRejected<DataType, ErrorType>(
+export function LoaderStatusRejected<DataType, ErrorType>(
   error: ErrorType,
-): IUseType<ILoaderState<DataType, ErrorType>, LoaderState.Rejected> {
+): IUseType<ILoaderStatus<DataType, ErrorType>, LoaderStatus.Rejected> {
   return {
-    type: LoaderState.Rejected,
+    type: LoaderStatus.Rejected,
     pending: false,
     resolving: false,
     resolved: false,

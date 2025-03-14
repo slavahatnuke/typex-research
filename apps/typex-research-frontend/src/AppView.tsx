@@ -11,7 +11,7 @@ const NewId = FastIncrementalId();
 
 function AppView() {
   const [{ appName }, setContext] = useAppContext();
-  const [sayHello, saidHello, sayHelloLoader] = useAppApi(App.Hello);
+  const [sayHello, saidHello, sayHelloStatus] = useAppApi(App.Hello);
 
   const [someValue, setSomeValue] = useState<any>(null);
 
@@ -83,9 +83,9 @@ function AppView() {
       </ul>
 
       <h4>Loading</h4>
-      {sayHelloLoader.loading && 'Loading...'}
-      {sayHelloLoader.loaded && '[LOADED]'}
-      {`[STATUS:${sayHelloLoader.type}]`}
+      {sayHelloStatus.loading && 'Loading...'}
+      {sayHelloStatus.loaded && '[LOADED]'}
+      {`[STATUS:${sayHelloStatus.type}]`}
       <h4>Response</h4>
       {saidHello && <pre>{JSON.stringify(saidHello, null, 2)}</pre>}
       <h4>Event</h4>
