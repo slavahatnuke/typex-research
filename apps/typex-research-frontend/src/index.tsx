@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import AppView from './AppView';
+import AppView, { AppProvider } from './AppView';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(
@@ -9,7 +9,9 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <React.StrictMode>
-    <AppView />
+    <AppProvider value={{appName: 'MyApp'}} >
+      <AppView />
+    </AppProvider>
   </React.StrictMode>
 );
 
