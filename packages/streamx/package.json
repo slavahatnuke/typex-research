@@ -8,7 +8,7 @@
     "dev.on": "tsc --watch",
     "dev.off": "echo 'dev.off'",
     "build": "tsc",
-    "release": "yarn build  && echo '> npm publish --access public'",
+    "release": "yarn build && npm version patch && echo '> npm publish --access public'",
     "check-types": "tsc --noEmit"
   },
   "keywords": [],

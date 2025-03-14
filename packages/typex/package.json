@@ -7,7 +7,7 @@
     "dev": "tsc --watch",
     "build": "tsc",
     "check-types": "tsc --noEmit",
-    "release": "yarn build && echo '> npm publish --access public'"
+    "release": "yarn build && npm version patch && echo '> npm publish --access public'"
   },
   "keywords": [],
   "author": "",
