@@ -14,12 +14,10 @@ function AppView() {
 
   const [someValue, setSomeValue] = useState<any>(null);
 
-  useAppEvents([
-    App.SaidHello
-  ], (event) => {
+  useAppEvents([App.SaidHello], (event) => {
     console.log('event>>>', event);
     setSomeValue(event);
-  })
+  });
 
   const [users, usersApi] = useList(
     (item: { id: number; name: string; age: number }) => String(item.id),
@@ -38,7 +36,7 @@ function AppView() {
   );
 
   useEffect(() => {
-    void sayHello({})
+    void sayHello({});
   }, []);
 
   return (
