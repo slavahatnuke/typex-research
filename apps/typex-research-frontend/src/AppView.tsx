@@ -1,17 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
-import { IType } from '@slavax/typex';
 import { App } from '@typex-reserach/app';
-import { sequence } from '@slavax/streamx/sequence';
-import { tap } from '@slavax/streamx/tap';
-import { run } from '@slavax/streamx/run';
-import { of } from '@slavax/streamx/of';
-import { SpeedTest } from '@slavax/funx/speed-test';
-import { relaxedBatch } from '@slavax/streamx/relaxedBatch';
 import { useList } from './lib/useList';
 import { FastIncrementalId } from '@slavax/funx/fastId';
 import { useAppContext } from './AppContextProvider';
-import { appSocket } from './appSocket';
 import { useNativeServiceProvider } from './AppService';
 import { AppContext } from './AppContext';
 
