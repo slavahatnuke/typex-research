@@ -121,7 +121,7 @@ function AppView() {
 
       <button
         onClick={() =>
-          itemsApi.add({
+          itemsApi.upsert({
             id: id(),
             age: Math.floor(Math.random() * 100),
             name: `John Doe ${Math.floor(Math.random() * 100)}`,
@@ -133,10 +133,13 @@ function AppView() {
       <ul>
         {items.map((item) => (
           <li key={item.id}>
-            <button onClick={() => itemsApi.remove(item)}>del</button>{' '}
+            <button onClick={() => itemsApi.remove(String(item.id))}>
+              delById
+            </button>{' '}
+            <button onClick={() => itemsApi.remove(item)}>delObject</button>{' '}
             <button
               onClick={() =>
-                itemsApi.update({ ...item, name: `${item.name} Updated` })
+                itemsApi.upsert({ ...item, name: `${item.name} Updated` })
               }
             >
               upd

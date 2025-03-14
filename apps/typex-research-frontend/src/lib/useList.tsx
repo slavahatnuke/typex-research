@@ -6,7 +6,7 @@ export type IUseListApi<
 > = {
   add: (item: Type) => unknown;
   remove: (item: Type | Identity) => unknown;
-  update: (item: Type) => unknown;
+  upsert: (item: Type) => unknown;
   put: (item: Type[]) => unknown;
   empty: () => unknown;
 };
@@ -35,10 +35,24 @@ export function useList<
         );
       }
     },
-    update: (item: Type) => {
-      _setItems((items) =>
-        items.map((i) => (identity(i) === identity(item) ? item : i)),
-      );
+    upsert: (item: Type) => {
+      _setItems((items) => {
+        let found = false;
+
+        const results = items.map((i) => {
+          const isEqual = identity(i) === identity(item);
+          if (isEqual) {
+            found = true;
+          }
+          return isEqual ? item : i;
+        });
+
+        if (!found) {
+          return [...results, item];
+        }
+
+        return results;
+      });
     },
     put: (items: Type[]) => _setItems(items),
     empty: () => _setItems([]),
