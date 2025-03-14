@@ -1,17 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import './App.css';
 import { App } from '@typex-reserach/app';
 import { useList } from './lib/useList';
 import { FastIncrementalId } from '@slavax/funx/fastId';
 import { useAppContext } from './AppContextProvider';
-import { useNativeServiceProvider } from './AppService';
-import { AppContext } from './AppContext';
+import { useServiceApi } from './AppService';
 
 const NewId = FastIncrementalId();
 
 function AppView() {
   const [{ appName }, setContext] = useAppContext();
-  const service = useNativeServiceProvider();
+  const [saidHello, sayHello] = useServiceApi(App.Hello);
 
   const [users, usersApi] = useList(
     (item: { id: number; name: string; age: number }) => String(item.id),
@@ -29,12 +28,10 @@ function AppView() {
     ],
   );
 
-
   useEffect(() => {
-    (async function () {
-      console.log(await service(App.Hello, {}, AppContext()));
-    })().catch((error) => console.error(error));
+    void sayHello({})
   }, []);
+
   return (
     <div className="App">
       <h2>Hi, I am a frontend app {appName}</h2>
@@ -71,6 +68,8 @@ function AppView() {
           </li>
         ))}
       </ul>
+
+      {JSON.stringify(saidHello)}
     </div>
   );
 }

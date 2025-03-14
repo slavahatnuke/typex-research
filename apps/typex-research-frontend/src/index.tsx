@@ -4,7 +4,7 @@ import './index.css';
 import AppView from './AppView';
 import reportWebVitals from './reportWebVitals';
 import { AppContextProvider } from './AppContextProvider';
-import { appService, NativeServiceProvider } from './AppService';
+import { appService, AppServiceProvider } from './AppService';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement,
@@ -12,11 +12,11 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <NativeServiceProvider value={appService}>
+    <AppServiceProvider value={appService}>
       <AppContextProvider value={{ appName: 'MyApp' }}>
         <AppView />
       </AppContextProvider>
-    </NativeServiceProvider>
+    </AppServiceProvider>
   </React.StrictMode>,
 );
 

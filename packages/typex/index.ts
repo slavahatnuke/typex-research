@@ -251,12 +251,12 @@ type IGiveRequestOutput<
   InputType extends ApiSpecification['type'],
 > = IGiveResponsePayload<IUseType<ApiSpecification, InputType>>;
 
-type IServiceInput<
+export type IServiceInput<
   ApiSpecification extends IType,
   InputType extends ApiSpecification['type'],
 > = IOptional<IGiveRequestInput<ApiSpecification, InputType>, 'type'>;
 
-type IServiceOutput<
+export type IServiceOutput<
   ApiSpecification extends IType,
   InputType extends ApiSpecification['type'],
 > = IGiveRequestOutput<ApiSpecification, InputType>;

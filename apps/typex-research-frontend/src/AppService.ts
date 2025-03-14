@@ -1,7 +1,8 @@
 import { HttpAsService } from '@slavax/typex/HttpAsService';
 import { IApp, IAppContext } from '@typex-reserach/app';
 import { SubscribeService } from '@slavax/typex';
-import { ServiceNativeProvider } from './lib/ServiceNativeProvider';
+import { ServiceProvider } from './lib/ServiceProvider';
+import { AppContext } from './AppContext';
 
 export const APP_SERVICE_URL = 'http://localhost:4000/';
 
@@ -12,5 +13,5 @@ const unsubscribeService = subscribeService((message) => {
   console.log(message);
 });
 
-export const [NativeServiceProvider, useNativeServiceProvider] =
-  ServiceNativeProvider('AppService', appService);
+export const [AppServiceProvider, useServiceApi] =
+  ServiceProvider('AppService', appService, () => AppContext());
