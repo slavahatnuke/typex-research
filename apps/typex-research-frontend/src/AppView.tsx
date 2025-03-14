@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
-
-import io from 'socket.io-client';
-import { IType, SubscribeService } from '@slavax/typex';
-import { App, IApp } from '@typex-reserach/app';
-import { HttpAsService } from '@slavax/typex/HttpAsService';
+import { IType } from '@slavax/typex';
+import { App } from '@typex-reserach/app';
 import { sequence } from '@slavax/streamx/sequence';
 import { tap } from '@slavax/streamx/tap';
 import { run } from '@slavax/streamx/run';
@@ -14,42 +11,15 @@ import { relaxedBatch } from '@slavax/streamx/relaxedBatch';
 import { useList } from './lib/useList';
 import { FastIncrementalId } from '@slavax/funx/fastId';
 import { useAppContext } from './AppContextProvider';
+import { appSocket } from './appSocket';
+import { useNativeServiceProvider } from './AppService';
+import { AppContext } from './AppContext';
 
-const serviceUrl = 'http://localhost:4000/';
-
-const socket = io(serviceUrl);
-type IFrontendContext = {
-  type: 'FrontendContext';
-  userToken: string;
-  traceId: string;
-};
-const service = HttpAsService<IApp, IFrontendContext>(serviceUrl);
-
-const subscribeService = SubscribeService(service);
-
-const unsubscribeService = subscribeService((message) => {
-  console.log(message);
-});
-
-const shortId = () => Math.random().toString(16).slice(2);
-
-const userToken = `user-token-${shortId()}`;
-
-function FrontendContext(
-  context: Partial<IFrontendContext> = {},
-): IType<IFrontendContext> {
-  return {
-    type: 'FrontendContext',
-    userToken: userToken,
-    traceId: shortId(),
-    ...context,
-  };
-}
-
-const id = FastIncrementalId();
+const NewId = FastIncrementalId();
 
 function AppView() {
   const [{ appName }, setContext] = useAppContext();
+  const service = useNativeServiceProvider();
 
   const [message, setMessage] = useState<string>('');
   const [notifications, setNotifications] = useState<string[]>([]);
@@ -58,12 +28,12 @@ function AppView() {
     (item: { id: number; name: string; age: number }) => String(item.id),
     [
       {
-        id: id(),
+        id: NewId(),
         name: 'John',
         age: 25,
       },
       {
-        id: id(),
+        id: NewId(),
         name: 'Jane',
         age: 22,
       },
@@ -75,47 +45,45 @@ function AppView() {
   }
 
   useEffect(() => {
-    // Listen for "notification" event from the server
-    socket.on('notification', (msg: any) => {
-      onNotification(msg);
-      console.log(msg);
-    });
-
-    sendMessage({ type: 'Hello IO' });
-
-    void (async function () {
-      const speedTest = SpeedTest({
-        every: 1000,
-        inIntervalMilliseconds: 7000,
-      });
-
-      const stream = of(sequence(5_000))
-        .pipe(relaxedBatch())
-        .pipe(tap(() => speedTest.track()));
-      // .pipe(tap(console.log));
-
-      await run(stream);
-
-      console.log('streaming >> done');
-    })();
+    // // Listen for "notification" event from the server
+    // appSocket.on('notification', (msg: any) => {
+    //   onNotification(msg);
+    //   console.log(msg);
+    // });
+    //
+    // sendMessage({ type: 'Hello IO' });
+    //
+    // void (async function () {
+    //   const speedTest = SpeedTest({
+    //     every: 1000,
+    //     inIntervalMilliseconds: 7000,
+    //   });
+    //
+    //   const stream = of(sequence(5_000))
+    //     .pipe(relaxedBatch())
+    //     .pipe(tap(() => speedTest.track()));
+    //   // .pipe(tap(console.log));
+    //
+    //   await run(stream);
+    //
+    //   console.log('streaming >> done');
+    // })();
 
     // Cleanup the socket connection when the component unmounts
     return () => {
-      socket.off('notification');
+      // appSocket.off('notification');
     };
   }, []);
 
-  // Send a message to the server
-  const sendMessage = (message: IType) => {
-    socket.emit('send-message', message);
-    setMessage('');
-  };
+  // // Send a message to the server
+  // const sendMessage = (message: IType) => {
+  //   appSocket.emit('send-message', message);
+  //   setMessage('');
+  // };
 
   useEffect(() => {
     (async function () {
-      // send post
-
-      console.log(await service(App.Hello, {}, FrontendContext()));
+      console.log(await service(App.Hello, {}, AppContext()));
     })().catch((error) => console.error(error));
   }, []);
   return (
@@ -128,7 +96,7 @@ function AppView() {
       <button
         onClick={() =>
           itemsApi.add({
-            id: id(),
+            id: NewId(),
             age: Math.floor(Math.random() * 100),
             name: `John Doe ${Math.floor(Math.random() * 100)}`,
           })

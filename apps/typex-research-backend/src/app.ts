@@ -4,13 +4,13 @@ import {
   Service,
   ServiceCall,
 } from '@slavax/typex';
-import { App, IApp } from '@typex-reserach/app';
+import { App, IApp, IAppContext } from '@typex-reserach/app';
 
 export function AppService() {
   const emit = EmitServiceEvent<IGetServiceEvents<IApp>>();
-  const call = ServiceCall<IApp>();
+  const call = ServiceCall<IApp, IAppContext>();
 
-  return Service<IApp>({
+  return Service<IApp, IAppContext>({
     [App.Hello]: async (input) => {
       return await emit(input, App.SaidHello, {});
     },
