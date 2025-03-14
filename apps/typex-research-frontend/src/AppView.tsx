@@ -13,10 +13,7 @@ function AppView() {
   const [{ appName }, setContext] = useAppContext();
   const service = useNativeServiceProvider();
 
-  const [message, setMessage] = useState<string>('');
-  const [notifications, setNotifications] = useState<string[]>([]);
-
-  const [items, itemsApi] = useList(
+  const [users, usersApi] = useList(
     (item: { id: number; name: string; age: number }) => String(item.id),
     [
       {
@@ -32,46 +29,6 @@ function AppView() {
     ],
   );
 
-  function onNotification(msg: string) {
-    setNotifications((prev) => [...prev, msg]);
-  }
-
-  useEffect(() => {
-    // // Listen for "notification" event from the server
-    // appSocket.on('notification', (msg: any) => {
-    //   onNotification(msg);
-    //   console.log(msg);
-    // });
-    //
-    // sendMessage({ type: 'Hello IO' });
-    //
-    // void (async function () {
-    //   const speedTest = SpeedTest({
-    //     every: 1000,
-    //     inIntervalMilliseconds: 7000,
-    //   });
-    //
-    //   const stream = of(sequence(5_000))
-    //     .pipe(relaxedBatch())
-    //     .pipe(tap(() => speedTest.track()));
-    //   // .pipe(tap(console.log));
-    //
-    //   await run(stream);
-    //
-    //   console.log('streaming >> done');
-    // })();
-
-    // Cleanup the socket connection when the component unmounts
-    return () => {
-      // appSocket.off('notification');
-    };
-  }, []);
-
-  // // Send a message to the server
-  // const sendMessage = (message: IType) => {
-  //   appSocket.emit('send-message', message);
-  //   setMessage('');
-  // };
 
   useEffect(() => {
     (async function () {
@@ -87,7 +44,7 @@ function AppView() {
 
       <button
         onClick={() =>
-          itemsApi.add({
+          usersApi.add({
             id: NewId(),
             age: Math.floor(Math.random() * 100),
             name: `John Doe ${Math.floor(Math.random() * 100)}`,
@@ -97,15 +54,15 @@ function AppView() {
         add
       </button>
       <ul>
-        {items.map((item) => (
+        {users.map((item) => (
           <li key={item.id}>
-            <button onClick={() => itemsApi.del(String(item.id))}>
+            <button onClick={() => usersApi.del(String(item.id))}>
               delById
             </button>{' '}
-            <button onClick={() => itemsApi.del(item)}>delObject</button>{' '}
+            <button onClick={() => usersApi.del(item)}>delObject</button>{' '}
             <button
               onClick={() =>
-                itemsApi.upsert({ ...item, name: `${item.name} Updated` })
+                usersApi.upsert({ ...item, name: `${item.name} Updated` })
               }
             >
               upd
@@ -119,3 +76,46 @@ function AppView() {
 }
 
 export default AppView;
+
+// const [message, setMessage] = useState<string>('');
+// const [notifications, setNotifications] = useState<string[]>([]);
+//
+// function onNotification(msg: string) {
+//   setNotifications((prev) => [...prev, msg]);
+// }
+//
+// useEffect(() => {
+//   // // Listen for "notification" event from the server
+//   // appSocket.on('notification', (msg: any) => {
+//   //   onNotification(msg);
+//   //   console.log(msg);
+//   // });
+//   //
+//   // sendMessage({ type: 'Hello IO' });
+//   //
+//   // void (async function () {
+//   //   const speedTest = SpeedTest({
+//   //     every: 1000,
+//   //     inIntervalMilliseconds: 7000,
+//   //   });
+//   //
+//   //   const stream = of(sequence(5_000))
+//   //     .pipe(relaxedBatch())
+//   //     .pipe(tap(() => speedTest.track()));
+//   //   // .pipe(tap(console.log));
+//   //
+//   //   await run(stream);
+//   //
+//   //   console.log('streaming >> done');
+//   // })();
+//
+//   // Cleanup the socket connection when the component unmounts
+//   return () => {
+//     // appSocket.off('notification');
+//   };
+// }, []);
+// // Send a message to the server
+// const sendMessage = (message: IType) => {
+//   appSocket.emit('send-message', message);
+//   setMessage('');
+// };
