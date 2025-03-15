@@ -18,8 +18,7 @@
     "@typex-reserach/app": "*",
     "web-vitals": "^2.1.4",
     "@slavax/funx": "*",
-    "@slavax/streamx": "*",
-    "@slavax/typex-react": "*"
+    "@slavax/streamx": "*"
   },
   "scripts": {
     "start": "react-scripts start",

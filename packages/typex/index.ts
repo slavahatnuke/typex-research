@@ -219,10 +219,15 @@ export function SubscribeService<
   return service[_subscribe];
 }
 
+export type IServiceFunction<
+  ApiSpecification extends IType,
+  Type extends ApiSpecification['type'],
+> = (
+  input: IGiveRequestInput<ApiSpecification, Type>,
+) => IPromise<IServiceOutput<ApiSpecification, Type>>;
+
 export type IServiceFunctions<ApiSpecification extends IType> = {
-  [Type in ApiSpecification['type']]: (
-    input: IGiveRequestInput<ApiSpecification, Type>,
-  ) => IPromise<IServiceOutput<ApiSpecification, Type>>;
+  [Type in ApiSpecification['type']]: IServiceFunction<ApiSpecification, Type>;
 };
 
 export type IGiveRequestPayload<
@@ -288,6 +293,15 @@ export function ServiceFunctions<ApiSpecification extends IType>(
   input: IServiceFunctions<ApiSpecification>,
 ): IServiceFunctions<ApiSpecification> {
   return input;
+}
+
+export function ServiceFunction<
+  Input extends ICommand<any> | IQuery<any> | IEvent<any> | IType,
+  Output extends IGiveResponsePayload<Input> = IGiveResponsePayload<Input>,
+>(
+  fn: (input: IGiveRequestPayload<Input>) => IPromise<Output>,
+): (input: IGiveRequestPayload<Input>) => IPromise<Output> {
+  return fn;
 }
 
 export type IServiceEvent<
