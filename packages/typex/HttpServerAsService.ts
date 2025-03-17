@@ -10,6 +10,7 @@ import {
 } from './index';
 import { ensureSlashAtTheEnd } from './lib/ensureSlashAtTheEnd';
 import { deserializeJSON, serializeJSON } from './lib/serializeJSON';
+import { URL } from 'node:url';
 
 const _identity = Symbol('_identity');
 
@@ -90,8 +91,16 @@ export function HttpServerAsService<
       return;
     }
 
+    const isSSE = SSE && req.url && req.url.startsWith(`${apiUrl}SSE`);
+
     let context: FrontendContext;
-    const contextHeader = req.headers['x-typex-context'];
+    const url = req.url;
+
+    const baseUrl = 'http://localhost:0001';
+    const contextFromQuery = url && SSE ? new URL(url, baseUrl).searchParams.get('x-typex-context') : undefined;
+    const contextFromHeader = req.headers['x-typex-context'] || undefined;
+
+    const contextHeader = contextFromHeader || contextFromQuery;
 
     if (typeof contextHeader === 'string') {
       context = deserialize(contextHeader);
@@ -166,54 +175,56 @@ export function HttpServerAsService<
           answer({ type: 500, reason: error });
         }
       });
-    } else if (SSE && req.method === 'GET' && req.url === `${apiUrl}SSE`) {
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader(
-        'Access-Control-Allow-Methods',
-        'GET, POST, PUT, DELETE, OPTIONS',
-      );
-      res.setHeader('Access-Control-Allow-Headers', [
-        'Content-Type',
-        'X-Typex-Context',
-      ]);
-
-      const backendContext = await getBackendContext();
-      const unsubscribeFanOut = fanOut.subscribe(({ event, context }) => {
-        if (
-          // @ts-ignore
-          context[_identity] &&
-          // @ts-ignore
-          backendContext[_identity] &&
-          // @ts-ignore
-          context[_identity] === backendContext[_identity]
-        ) {
-          res.write(
-            `data: ${serialize({
-              event,
-              context: mapBackendContextToFronted(
-                context as unknown as BackendContext,
-              ),
-              input: undefined,
-            })}\n\n`,
-          );
-        }
-      });
-
-      req.on('close', () => {
-        unsubscribeFanOut();
-        res.end();
-      });
-      // health
-    } else if (req.url === `${apiUrl}health`) {
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
-      res.end('OK');
     } else {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Not Found');
+      if (SSE && req.method === 'GET' && req.url && isSSE) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader(
+          'Access-Control-Allow-Methods',
+          'GET, POST, PUT, DELETE, OPTIONS',
+        );
+        res.setHeader('Access-Control-Allow-Headers', [
+          'Content-Type',
+          'X-Typex-Context',
+        ]);
+
+        const backendContext = await getBackendContext();
+        const unsubscribeFanOut = fanOut.subscribe(({ event, context }) => {
+          if (
+            // @ts-ignore
+            context[_identity] &&
+            // @ts-ignore
+            backendContext[_identity] &&
+            // @ts-ignore
+            context[_identity] === backendContext[_identity]
+          ) {
+            res.write(
+              `data: ${serialize({
+                event,
+                context: mapBackendContextToFronted(
+                  context as unknown as BackendContext,
+                ),
+                input: undefined,
+              })}\n\n`,
+            );
+          }
+        });
+
+        req.on('close', () => {
+          unsubscribeFanOut();
+          res.end();
+        });
+        // health
+      } else if (req.url === `${apiUrl}health`) {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('OK');
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not Found');
+      }
     }
   });
 

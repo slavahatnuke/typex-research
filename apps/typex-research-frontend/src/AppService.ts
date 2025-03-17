@@ -6,7 +6,7 @@ import { AppContext } from './AppContext';
 
 export const APP_SERVICE_URL = 'http://localhost:4000/';
 
-export const appService = HttpAsService<IApp, IAppContext>(APP_SERVICE_URL);
+export const appService = HttpAsService<IApp, IAppContext>(APP_SERVICE_URL, () => AppContext());
 
 const subscribeService = SubscribeService(appService);
 const unsubscribeService = subscribeService((serviceEvent) => {

@@ -1,7 +1,7 @@
 import {
   IContext,
   IEvent,
-  IGetServiceEvents,
+  IGetServiceEvents, IPromise,
   IService,
   IType,
   NewError,
@@ -35,6 +35,7 @@ export function HttpAsService<
   Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
 >(
   url: string,
+  getContext: Context extends void ? void : () => Context,
   {
     headers = () => ({}),
     SSE = true,
@@ -53,7 +54,7 @@ export function HttpAsService<
     if (SSE) {
       const { publish } = events;
 
-      const eventSource = new EventSource(`${url}SSE`);
+      const eventSource = new EventSource(`${url}SSE?x-typex-context=${serialize(getContext ? getContext(): {})}`);
 
       eventSource.onmessage = async (message) => {
         try {
