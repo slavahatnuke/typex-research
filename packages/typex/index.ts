@@ -226,7 +226,7 @@ export type IServiceFunctions<ApiSpecification extends IType> = {
 };
 
 export type IServiceInput<Input extends IServiceAction> = IOptional<
-  Input,
+  IMetaFreeObject<Input>,
   'type'
 >;
 
@@ -264,8 +264,8 @@ export function ServiceFunctions<ApiSpecification extends IType>(
 export function ServiceFunction<
   Input extends ICommand<any> | IQuery<any> | IEvent<any> | IType,
 >(
-  fn: (input: Input) => IPromise<IGetObjectOutput<Input>>,
-): (input: Input) => IPromise<IGetObjectOutput<Input>> {
+  fn: (input: IMetaFreeObject<Input>) => IPromise<IServiceOutput<Input>>,
+): (input: IMetaFreeObject<Input>) => IPromise<IServiceOutput<Input>> {
   return fn;
 }
 
@@ -279,11 +279,15 @@ export type IServiceEvent<
   input?: ApiSpecification;
 };
 
-export function _serviceSetSubscribe(
-  service: IServiceHandler<any, any>,
-  subscribe: ISubscribeService<any, any, any>,
-) {
+export function _serviceSetSubscribe<
+  ApiSpecification extends IType,
+  Context extends IContext | void = void,
+>(
+  service: IServiceHandler<ApiSpecification, Context>,
+  subscribe: ISubscribeService<ApiSpecification, Context, IEvent<any>>,
+): IService<ApiSpecification, Context, IEvent<any>> {
   (service as any)[_subscribe] = subscribe;
+  // @ts-ignore
   return service;
 }
 
@@ -310,13 +314,12 @@ export function NewService<
   const events =
     InMemoryBus<IServiceEvent<ApiSpecification, Context, Events>>();
 
-  const service = defineService({ events });
+  const serviceHanler = defineService({ events });
 
-  return _serviceSetSubscribe(service, events.subscribe) as IService<
-    ApiSpecification,
-    Context,
-    Events
-  >;
+  return _serviceSetSubscribe<ApiSpecification, Context>(
+    serviceHanler,
+    events.subscribe,
+  );
 }
 
 export function ServiceHandler<
@@ -355,76 +358,77 @@ export function Service<
   return NewService<ApiSpecification, Context, Events>(({ events }) => {
     const { publish } = events;
 
-    const serviceHandler: IServiceHandler<ApiSpecification, Context> = ServiceHandler<ApiSpecification, Context>(
-      async (type, input, context) => {
-        // @ts-ignore
-        const fn = functions[type];
-        if (fn) {
+    const serviceHandler: IServiceHandler<ApiSpecification, Context> =
+      ServiceHandler<ApiSpecification, Context>(
+        async (type, input, context) => {
           // @ts-ignore
-          // @ts-ignore
-          return await fn(
-            //@ts-ignore
-            {
-              ...input,
+          const fn = functions[type];
+          if (fn) {
+            // @ts-ignore
+            // @ts-ignore
+            return await fn(
+              //@ts-ignore
+              {
+                ...input,
 
-              type,
+                type,
 
-              // @ts-ignore
-              [_emitter]: async (eventType: string, event: IEvent<any>) => {
-                const _event = { ...event, type: eventType };
-
-                await publish({
-                  // @ts-ignore
-                  event: _event,
-                  context: context,
-                  // @ts-ignore
-                  input: _cleanServiceInput({ ...input, type }),
-                });
-
-                return _event;
-              },
-
-              // @ts-ignore
-              [_caller]: async (
-                base: IType,
-                inputType: string,
-                input: IType,
-                nextContext?: Context,
-              ) => {
                 // @ts-ignore
-                if (!base[_context]) {
-                  throw ServiceCallerContextNotFound({
-                    base,
-                    inputType,
-                    input,
-                    inputContext: _context,
-                    context,
+                [_emitter]: async (eventType: string, event: IEvent<any>) => {
+                  const _event = { ...event, type: eventType };
+
+                  await publish({
+                    // @ts-ignore
+                    event: _event,
+                    context: context,
+                    // @ts-ignore
+                    input: _cleanServiceInput({ ...input, type }),
                   });
-                }
 
-                return await serviceHandler(
-                  inputType,
+                  return _event;
+                },
+
+                // @ts-ignore
+                [_caller]: async (
+                  base: IType,
+                  inputType: string,
+                  input: IType,
+                  nextContext?: Context,
+                ) => {
                   // @ts-ignore
-                  _cleanServiceInput({
-                    ...input,
-                    type: inputType,
-                  }),
-                  // @ts-ignore
-                  nextContext ?? base[_context],
-                );
+                  if (!base[_context]) {
+                    throw ServiceCallerContextNotFound({
+                      base,
+                      inputType,
+                      input,
+                      inputContext: _context,
+                      context,
+                    });
+                  }
+
+                  return await serviceHandler(
+                    inputType,
+                    // @ts-ignore
+                    _cleanServiceInput({
+                      ...input,
+                      type: inputType,
+                    }),
+                    // @ts-ignore
+                    nextContext ?? base[_context],
+                  );
+                },
+
+                // @ts-ignore
+                [_context]: context,
               },
-
-              // @ts-ignore
-              [_context]: context,
-            },
-          );
-        } else {
-          throw ServiceFunctionNotFound({
-            functionName: type,
-          });
-        }
-      },
-    );
+            );
+          } else {
+            throw ServiceFunctionNotFound({
+              functionName: type,
+            });
+          }
+        },
+      );
 
     return serviceHandler;
   });
@@ -557,7 +561,7 @@ export const ServiceEventEmitterNotFound =
 
 export type IServiceSubscriberNotFound = IError<{
   type: ServiceError.ServiceSubscriberNotFound;
-  service: IService<any, any, any>;
+  service: IService<any, any, any> | any;
 }>;
 
 export const ServiceSubscriberNotFound = NewError<IServiceSubscriberNotFound>(
