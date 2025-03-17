@@ -1,6 +1,6 @@
 // specification
 
-import { IMetaObject, IPromise, IType, IUseType } from '@slavax/typex';
+import { IPromise, IType, IUseType } from '@slavax/typex';
 
 export enum FlowSpec {
   Command = 'Command',
@@ -238,21 +238,28 @@ type IThenChainingHandler =
   | IHandlerAsFunction
   | UseSpec<FlowSpec.Handler | FlowSpec.Resolve | FlowSpec.Reject>;
 
-export type IFlowSpecState<Type = unknown> = IType<{
-  type: FlowSpec.State;
-  name: string;
-  title: string;
-  identity?: (value: Type) => IPromise<string>;
-}> &
-  IMetaObject<IFlowSpecDataType<Type>>;
+const _dataType = Symbol('_dataType');
+export type IFlowSpecState<Type = unknown> = IType<
+  {
+    type: FlowSpec.State;
+    name: string;
+    title: string;
+    identity?: (value: Type) => IPromise<string>;
+  } & {
+    [_dataType]?: IFlowSpecDataType<Type>;
+  }
+>;
 
-export type IFlowSpecEntity<EntityType = unknown> = IType<{
-  type: FlowSpec.Entity;
-  name: string;
-  title: string;
-  identity?: (value: EntityType) => IPromise<string>;
-}> &
-  IMetaObject<IFlowSpecDataType<EntityType>>;
+export type IFlowSpecEntity<EntityType = unknown> = IType<
+  {
+    type: FlowSpec.Entity;
+    name: string;
+    title: string;
+    identity?: (value: EntityType) => IPromise<string>;
+  } & {
+    [_dataType]?: IFlowSpecDataType<EntityType>;
+  }
+>;
 
 export type IFlowSpecDataType<Type = unknown> = IType<{
   type: FlowSpec.DataType;

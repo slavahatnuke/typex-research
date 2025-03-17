@@ -3,9 +3,9 @@ import {
   GetServiceContext,
   ICommand,
   IContext,
+  IEntity,
   IEvent,
   IGetServiceEvents,
-  IModel,
   InMemoryBus,
   IQuery,
   IServiceEvent,
@@ -26,9 +26,10 @@ type ICreateUser = ICommand<
   IUserCreated
 >;
 
-type IUserReadModel = IModel<{
+type IUserReadModel = IEntity<{
   type: 'User';
   id: string;
+  version: number;
   email: string;
   name: string;
 }>;
@@ -91,6 +92,7 @@ describe(Service.name, () => {
           return {
             type: 'User',
             id: input.userId,
+            version: 1,
             email: 'email',
             name: 'name',
           };
@@ -160,6 +162,7 @@ describe(Service.name, () => {
           return {
             type: 'User',
             id: input.userId,
+            version: 1,
             email: 'email',
             name: 'name',
           };
@@ -212,6 +215,7 @@ describe(Service.name, () => {
       email: 'email',
       id: 'userId123',
       name: 'name',
+      version: 1,
     });
 
     // check that the events are emitted

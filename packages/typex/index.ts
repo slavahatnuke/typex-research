@@ -17,127 +17,124 @@ type IGetRecordValues<R extends Record<any, any>> = R[keyof R];
 export type IPromise<Type = unknown> = Promise<Type> | Type;
 
 // meta
-const _meta = Symbol('_meta');
-type meta = typeof _meta;
-
-export type IMetaObject<MetaInfo = unknown> = Readonly<{ [_meta]?: MetaInfo }>;
-
-export type IGetMetaFromObject<Object extends IType> =
-  Object extends IMetaObject ? Exclude<Object[meta], undefined> : never;
-
-export type IMetaType<Type extends IType, MetaInfo = unknown> = IType<
-  Type & IMetaObject<IGetMetaFromObject<Type> | MetaInfo>
->;
-
-export type IGetMetaInfo<Object extends IType, Type extends string> = IUseType<
-  IGetMetaFromObject<Object>,
-  Type
->;
+const _kind = Symbol('_kind');
+const _output = Symbol('_output');
+const _events = Symbol('_events');
+const _none = Symbol('_none');
 
 export type IMetaFreeObject<Object extends IType | void | unknown | never> =
-  Object extends IType ? IType<Omit<Object, meta>> : never;
+  Object extends IType
+    ? IType<Omit<Object, typeof _kind | typeof _output | typeof _events>>
+    : never;
 
-// actions
-enum Action {
+export type INoneAsUndefined<T> = T extends typeof _none ? undefined : T;
+export type INoneAsNever<T> = T extends typeof _none ? never : T;
+
+export type IUseKind<
+  ApiSpecification extends IType,
+  Kind extends TypeX,
+> = Extract<ApiSpecification, { [_kind]?: Kind }>;
+
+export type IGetObjectKind<Type extends IType> = Type extends {
+  [_kind]?: any;
+}
+  ? Exclude<Type[typeof _kind], undefined>
+  : never;
+
+export type IGetObjectInput<Type extends IType> = IMetaFreeObject<Type>;
+export type IGetObjectOutput<Type extends IType> = Type extends {
+  [_output]?: any;
+}
+  ? INoneAsUndefined<Exclude<Type[typeof _output], undefined>>
+  : never;
+export type IGetObjectEvents<Type extends IType> = Type extends {
+  [_events]?: any;
+}
+  ? INoneAsNever<Exclude<Type[typeof _events], undefined>>
+  : never;
+
+export enum TypeX {
   Command = 'Command',
   Query = 'Query',
   Event = 'Event',
   Error = 'Error',
-}
-
-// payloads
-enum Payload {
-  Request = 'Request',
-  Response = 'Response',
-
-  Events = 'Events',
-  EventPayload = 'EventPayload',
-
   Model = 'Model',
-  ModelPayload = 'ModelPayload',
-  ErrorPayload = 'ErrorPayload',
+  Entity = 'Entity',
 }
-
-// meta tags
-type IRequestPayload<Request extends IType> = IType<{
-  type: Payload.Request;
-  request: IMetaFreeObject<Request>;
-}>;
-type IResponsePayload<Response> = IType<{
-  type: Payload.Response;
-  response: Response;
-}>;
-type IEventsPayload<Events extends IType | void = void> = IType<{
-  type: Payload.Events;
-  events: IMetaFreeObject<Events>;
-}>;
-type IActionType<Type extends Action> = IType<{
-  type: Type;
-}>;
-type IEventPayload<Payload extends IType> = IType<{
-  type: Payload.EventPayload;
-  payload: Payload;
-}>;
-type IErrorPayload<Type extends IType> = {
-  type: Payload.ErrorPayload;
-  payload: Type;
-};
 
 // actions
 export type ICommand<
-  Request extends IType,
-  Response extends unknown | void = void,
-  Events extends IType | void = void,
-> = IMetaType<
-  Request,
-  | IActionType<Action.Command>
-  | IRequestPayload<Request>
-  | IResponsePayload<Response>
-  | IEventsPayload<Events>
+  Input extends IType,
+  Output extends unknown | typeof _none = typeof _none,
+  Events extends IEvent<any> | typeof _none = typeof _none,
+> = IType<
+  Input & {
+    [_kind]?: TypeX.Command;
+    [_output]?: Output;
+    [_events]?: Events;
+  }
 >;
 
 export type IQuery<
-  Request extends IType,
-  Response extends unknown = unknown,
-> = IMetaType<
-  Request,
-  | IActionType<Action.Query>
-  | IRequestPayload<Request>
-  | IResponsePayload<Response>
+  Input extends IType,
+  Output extends unknown | typeof _none = typeof _none,
+  Events extends IEvent<any> | typeof _none = typeof _none,
+> = IType<
+  Input & {
+    [_kind]?: TypeX.Query;
+    [_output]?: Output;
+    [_events]?: Events;
+  }
 >;
 
 export type IEvent<
   Payload extends IType,
-  Events extends IType | void = void,
-> = IMetaType<
-  Payload,
-  IActionType<Action.Event> | IEventPayload<Payload> | IEventsPayload<Events>
+  Events extends IEvent<any> | typeof _none = typeof _none,
+> = IType<
+  Payload & {
+    [_kind]?: TypeX.Event;
+    [_events]?: Events;
+  }
 >;
 
-type IErrorAction = {
-  type: Action.Error;
-};
-
-export type IError<Type extends IType> = IMetaType<
-  Error & {
-    toJSON: IType<{ type: Type['type']; data: Type }> & Error;
-  } & IType<{ type: Type['type']; data: Type }>,
-  IErrorAction | IErrorPayload<Type>
+export type IError<Type extends IType> = IType<
+  Error & { type: Type['type']; data: Type }
 >;
 
 // model
-export type IModel<Type extends IType = IType> = IMetaType<
-  Type,
-  | IType<{
-      type: Payload.Model;
-    }>
-  | IType<{ type: Payload.ModelPayload; payload: Type }>
+export type IModel<Type extends IType = IType> = IType<
+  Type & {
+    [_kind]?: TypeX.Model;
+  }
+>;
+
+// entity
+export type IEntity<
+  Type extends IType<
+    { type: string } & {
+      id: string | number;
+      version: string | number;
+    }
+  > = IType<
+    { type: string } & {
+      id: string | number;
+      version: string | number;
+    }
+  >,
+> = IType<
+  Type & {
+    [_kind]?: TypeX.Entity;
+  }
 >;
 
 // errors
+
+export type IGetErrorData<Input extends IType> =
+  Input extends IError<IType> ? IGetObjectInput<Input>['data'] : never;
+
 export type INewErrorPayload<Type extends IType> =
   Type extends IError<IType>
-    ? IOptional<IGiveErrorPayload<Type>, 'type'>
+    ? IOptional<IGetErrorData<Type>, 'type'>
     : IOptional<Type, 'type'>;
 
 export type INewError<Type extends IType> = (
@@ -175,14 +172,6 @@ export function NewError<Type extends IType>(
     new _Error(payload, origin) as unknown as IError<Type>;
 }
 
-type IGiveErrorPayload<
-  Input extends IType,
-  X extends IGetMetaInfo<Input, Payload.ErrorPayload> = IGetMetaInfo<
-    Input,
-    Payload.ErrorPayload
-  >,
-> = X extends IErrorPayload<IType> ? X['payload'] : never;
-
 // service
 
 const _subscribe = Symbol('_subscribe');
@@ -196,9 +185,9 @@ export type IService<
   Events extends IEvent<any> = IGetServiceEvents<ApiSpecification>,
 > = (<InputType extends ApiSpecification['type']>(
   type: InputType,
-  input: IServiceInput<ApiSpecification, InputType>,
+  input: IServiceInput<IUseType<ApiSpecification, InputType>>,
   context: Context,
-) => Promise<IServiceOutput<ApiSpecification, InputType>>) &
+) => Promise<IServiceOutput<IUseType<ApiSpecification, InputType>>>) &
   Readonly<{
     [_subscribe]: ISubscribeService<ApiSpecification, Context, Events>;
   }>;
@@ -216,78 +205,55 @@ export function SubscribeService<
 >(
   service: IService<ApiSpecification, Context, Events>,
 ): ISubscribeService<ApiSpecification, Context, Events> {
+  if (!service[_subscribe]) {
+    throw ServiceSubscriberNotFound({
+      service,
+    });
+  }
   return service[_subscribe];
 }
 
-export type IServiceFunction<
-  ApiSpecification extends IType,
-  Type extends ApiSpecification['type'],
-> = (
-  input: IGiveRequestInput<ApiSpecification, Type>,
-) => IPromise<IServiceOutput<ApiSpecification, Type>>;
+type IServiceAction = ICommand<any> | IQuery<any> | IEvent<any>;
+
+export type IServiceFunction<Action extends IServiceAction> = (
+  input: IGetObjectInput<Action>,
+) => IPromise<IServiceOutput<Action>>;
 
 export type IServiceFunctions<ApiSpecification extends IType> = {
-  [Type in ApiSpecification['type']]: IServiceFunction<ApiSpecification, Type>;
+  [Type in ApiSpecification['type']]: IServiceFunction<
+    IUseType<ApiSpecification, Type>
+  >;
 };
 
-export type IGiveRequestPayload<
-  Input extends IType,
-  X extends IUseType<IGetMetaFromObject<Input>, Payload.Request> = IUseType<
-    IGetMetaFromObject<Input>,
-    Payload.Request
-  >,
-> = X extends IRequestPayload<IType> ? X['request'] : never;
+export type IServiceInput<Input extends IServiceAction> = IOptional<
+  Input,
+  'type'
+>;
 
-export type IGiveResponsePayload<
-  Input extends IType,
-  X extends IGetMetaInfo<Input, Payload.Response> = IGetMetaInfo<
-    Input,
-    Payload.Response
-  >,
-> = X extends IResponsePayload<any> ? X['response'] : void;
-
-type IGiveRequestInput<
-  ApiSpecification extends IType,
-  InputType extends ApiSpecification['type'],
-> = IGiveRequestPayload<IUseType<ApiSpecification, InputType>>;
-
-type IGiveRequestOutput<
-  ApiSpecification extends IType,
-  InputType extends ApiSpecification['type'],
-> = IGiveResponsePayload<IUseType<ApiSpecification, InputType>>;
-
-export type IServiceInput<
-  ApiSpecification extends IType,
-  InputType extends ApiSpecification['type'],
-> = IOptional<IGiveRequestInput<ApiSpecification, InputType>, 'type'>;
-
-export type IServiceOutput<
-  ApiSpecification extends IType,
-  InputType extends ApiSpecification['type'],
-> = IGiveRequestOutput<ApiSpecification, InputType>;
+export type IServiceOutput<Input extends IServiceAction> =
+  IGetObjectOutput<Input> extends IType
+    ? IMetaFreeObject<IGetObjectOutput<Input>>
+    : Input;
 
 const _emitter = Symbol('_emitter');
 const _caller = Symbol('_caller');
 const _context = Symbol('_context');
 
-type IGetEventsFromAction<Action extends IType> =
-  IGetMetaInfo<Action, Payload.Events> extends IEventsPayload<IType>
-    ? IGetMetaInfo<Action, Payload.Events>['events']
-    : never;
-
-type IGetServiceEventsFromActions<ApiSpecification extends IType> =
+export type IGetServiceEventsFromActions<ApiSpecification extends IType> =
   IGetRecordValues<
     Readonly<{
-      [Type in ApiSpecification['type']]: IGetEventsFromAction<
+      [Type in ApiSpecification['type']]: IGetObjectEvents<
         IUseType<ApiSpecification, Type>
       >;
     }>
   >;
 
-export type IGetServiceEvents<ApiSpecification extends IType> =
-  IGetServiceEventsFromActions<ApiSpecification>;
+export type IGetServiceEventsFromSpecification<ApiSpecification extends IType> =
+  IUseKind<ApiSpecification, TypeX.Event>;
 
-// | IGetEventsFromSpecification<ApiSpecification>;
+export type IGetServiceEvents<ApiSpecification extends IType> =
+  | IGetServiceEventsFromActions<ApiSpecification>
+  | IGetServiceEventsFromSpecification<ApiSpecification>;
 
 export function ServiceFunctions<ApiSpecification extends IType>(
   input: IServiceFunctions<ApiSpecification>,
@@ -297,10 +263,8 @@ export function ServiceFunctions<ApiSpecification extends IType>(
 
 export function ServiceFunction<
   Input extends ICommand<any> | IQuery<any> | IEvent<any> | IType,
-  Output extends IGiveResponsePayload<Input> = IGiveResponsePayload<Input>,
->(
-  fn: (input: IGiveRequestPayload<Input>) => IPromise<Output>,
-): (input: IGiveRequestPayload<Input>) => IPromise<Output> {
+  Output extends IGetObjectOutput<Input> = IGetObjectOutput<Input>,
+>(fn: (input: Input) => IPromise<Output>): (input: Input) => IPromise<Output> {
   return fn;
 }
 
@@ -327,9 +291,9 @@ type IServiceHandler<
   Context extends IContext | void = void,
 > = (
   type: ApiSpecification['type'],
-  input: IServiceInput<ApiSpecification, ApiSpecification['type']>,
+  input: IServiceInput<ApiSpecification>,
   context: Context,
-) => Promise<IServiceOutput<ApiSpecification, ApiSpecification['type']>>;
+) => Promise<IServiceOutput<ApiSpecification>>;
 
 export function NewService<
   ApiSpecification extends IType,
@@ -463,12 +427,11 @@ export function Service<
 }
 
 // service tools
-type IBase = ICommand<any> | IQuery<any, any> | IEvent<any>;
 
 export type IEmitServiceEvent<Events extends IType> = <
   EventType extends Events['type'],
 >(
-  base: IBase,
+  action: IServiceAction,
   eventType: EventType,
   event: IOptional<IUseType<IMetaFreeObject<Events>, EventType>, 'type'>,
 ) => Promise<IUseType<IMetaFreeObject<Events>, EventType>>;
@@ -476,16 +439,16 @@ export type IEmitServiceEvent<Events extends IType> = <
 export function EmitServiceEvent<
   Events extends IType,
 >(): IEmitServiceEvent<Events> {
-  return async (base, eventType, event) => {
+  return async (action, eventType, event) => {
     // @ts-ignore
-    const emitter = base[_emitter];
+    const emitter = action[_emitter];
 
     if (emitter) {
       // @ts-ignore
       return await emitter(eventType, event);
     } else {
       throw ServiceEventEmitterNotFound({
-        base,
+        action: action,
         event,
       });
     }
@@ -507,25 +470,25 @@ export type IServiceCall<
   ApiSpecification extends IType,
   Context extends IContext | void = void,
 > = <InputType extends ApiSpecification['type']>(
-  base: IBase,
+  action: IServiceAction,
   inputType: InputType,
-  input: IServiceInput<ApiSpecification, InputType>,
+  input: IServiceInput<IUseType<ApiSpecification, InputType>>,
   context?: Context,
-) => Promise<IServiceOutput<ApiSpecification, InputType>>;
+) => Promise<IServiceOutput<IUseType<ApiSpecification, InputType>>>;
 
 export function ServiceCall<
   ApiSpecification extends IType,
   Context extends IContext | void = void,
 >(): IServiceCall<ApiSpecification, Context> {
-  return async (base, inputType, input, _context?: Context) => {
+  return async (action, inputType, input, _context?: Context) => {
     // @ts-ignore
-    const caller = base[_caller];
+    const caller = action[_caller];
 
     if (caller) {
-      return await caller(base, inputType, input, _context);
+      return await caller(action, inputType, input, _context);
     } else {
       throw ServiceCallerNotFound({
-        base,
+        action: action,
         inputType,
         input,
         context: _context,
@@ -540,6 +503,7 @@ export enum ServiceError {
   ServiceCallerNotFound = 'ServiceCallerNotFound',
   ServiceEventEmitterNotFound = 'ServiceEventEmitterNotFound',
   ServiceCallerContextNotFound = 'ServiceCallerContextNotFound',
+  ServiceSubscriberNotFound = 'ServiceSubscriberNotFound',
 }
 
 export type IServiceError = IError<{
@@ -550,7 +514,7 @@ export type IServiceError = IError<{
 export type IServiceCallerNotFound = IError<{
   type: ServiceError.ServiceCallerNotFound;
   inputType: string;
-  base: IType | any;
+  action: IType | any;
   input: IType | any;
   context: IContext | any;
 }>;
@@ -578,7 +542,7 @@ export const ServiceCallerContextNotFound =
 
 export type IServiceEventEmitterNotFound = IError<{
   type: ServiceError.ServiceEventEmitterNotFound;
-  base: IType | Record<any, any>;
+  action: IType | Record<any, any>;
   event: IType | Record<any, any>;
 }>;
 
@@ -586,6 +550,15 @@ export const ServiceEventEmitterNotFound =
   NewError<IServiceEventEmitterNotFound>(
     ServiceError.ServiceEventEmitterNotFound,
   );
+
+export type IServiceSubscriberNotFound = IError<{
+  type: ServiceError.ServiceSubscriberNotFound;
+  service: IService<any, any, any>;
+}>;
+
+export const ServiceSubscriberNotFound = NewError<IServiceSubscriberNotFound>(
+  ServiceError.ServiceSubscriberNotFound,
+);
 
 // bus
 
