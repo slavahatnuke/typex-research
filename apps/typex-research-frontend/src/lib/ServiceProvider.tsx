@@ -7,7 +7,7 @@ import {
   IServiceEvent,
   IServiceInput,
   IServiceOutput,
-  IType,
+  IType, IUseType,
   SubscribeService,
 } from '@slavax/typex';
 import { NewReactProvider } from './NewReactProvider';
@@ -54,8 +54,8 @@ export function ServiceProvider<
     }> = {},
   ) => {
     const [responseState, setResponseState] = useState<{
-      response: IServiceOutput<ApiSpecification, Type> | null;
-      status: ILoaderStatus<IServiceOutput<ApiSpecification, Type>, unknown>;
+      response: IServiceOutput<IUseType<ApiSpecification, Type>> | null;
+      status: ILoaderStatus<IServiceOutput<IUseType<ApiSpecification, Type>>, unknown>;
     }>({
       response: null,
       status: LoaderStatusPending(),
@@ -63,7 +63,7 @@ export function ServiceProvider<
 
     return [
       async (
-        input: IServiceInput<ApiSpecification, Type>,
+        input: IServiceInput<IUseType<ApiSpecification, Type>>,
         context?: Context,
       ) => {
         try {

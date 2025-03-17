@@ -263,8 +263,9 @@ export function ServiceFunctions<ApiSpecification extends IType>(
 
 export function ServiceFunction<
   Input extends ICommand<any> | IQuery<any> | IEvent<any> | IType,
-  Output extends IGetObjectOutput<Input> = IGetObjectOutput<Input>,
->(fn: (input: Input) => IPromise<Output>): (input: Input) => IPromise<Output> {
+>(
+  fn: (input: Input) => IPromise<IGetObjectOutput<Input>>,
+): (input: Input) => IPromise<IGetObjectOutput<Input>> {
   return fn;
 }
 
@@ -354,7 +355,7 @@ export function Service<
   return NewService<ApiSpecification, Context, Events>(({ events }) => {
     const { publish } = events;
 
-    const serviceHandler = ServiceHandler<ApiSpecification, Context>(
+    const serviceHandler: IServiceHandler<ApiSpecification, Context> = ServiceHandler<ApiSpecification, Context>(
       async (type, input, context) => {
         // @ts-ignore
         const fn = functions[type];
@@ -368,6 +369,7 @@ export function Service<
 
               type,
 
+              // @ts-ignore
               [_emitter]: async (eventType: string, event: IEvent<any>) => {
                 const _event = { ...event, type: eventType };
 
@@ -382,6 +384,7 @@ export function Service<
                 return _event;
               },
 
+              // @ts-ignore
               [_caller]: async (
                 base: IType,
                 inputType: string,
@@ -411,6 +414,7 @@ export function Service<
                 );
               },
 
+              // @ts-ignore
               [_context]: context,
             },
           );
