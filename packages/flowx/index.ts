@@ -72,6 +72,7 @@ type IFlowSpecAll = IType<{
     | StreamLike<UseSpec<FlowSpec.Request | FlowSpec.Value> | Promise<unknown>>
     | UseSpec<FlowSpec.Loop>;
 }>;
+// TODO {{WIP}} @slava loop should be in then; when(x).then(loop(() => ...))
 type IFlowSpecLoop = IType<{
   type: FlowSpec.Loop;
   handler: ILoopFunction;
