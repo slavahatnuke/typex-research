@@ -30,6 +30,7 @@ export enum FlowSpec {
 
   All = 'All',
   Loop = 'Loop',
+  Map = 'Map',
 }
 
 export type UseSpec<Type extends FlowSpec> = IUseType<IFlowSpec, Type>;
@@ -68,15 +69,20 @@ type IFlowSpecHandler = IType<{
 }>;
 type IFlowSpecAll = IType<{
   type: FlowSpec.All;
-  values:
-    | StreamLike<UseSpec<FlowSpec.Request | FlowSpec.Value> | Promise<unknown>>
-    | UseSpec<FlowSpec.Loop>;
+  values: StreamLike<UseSpec<FlowSpec.Request | FlowSpec.Value>>;
 }>;
 // TODO {{WIP}} @slava loop should be in then; when(x).then(loop(() => ...))
 type IFlowSpecLoop = IType<{
   type: FlowSpec.Loop;
-  handler: ILoopFunction;
+  handler: IFlowLoopFunction;
 }>;
+
+export type IFlowSpecMapFunction = IHandlerAsFunction;
+type IFlowSpecMap = IType<{
+  type: FlowSpec.Map;
+  handler: IFlowSpecMapFunction;
+}>;
+
 export type IFlowSpec =
   | IType<{
       type: FlowSpec.Command;
@@ -138,7 +144,8 @@ export type IFlowSpec =
     }>
   | IFlowSpecValue
   | IFlowSpecAll
-  | IFlowSpecLoop;
+  | IFlowSpecLoop
+  | IFlowSpecMap;
 
 type StreamLike<Type> =
   | AsyncIterable<Type>
@@ -147,23 +154,29 @@ type StreamLike<Type> =
   | ReadonlyArray<Type>;
 
 type IFlowToolkitStreamingValue =
-  | UseSpec<FlowSpec.Request | FlowSpec.All | FlowSpec.Value | FlowSpec.Loop>
-  | Promise<any>
-  | StreamLike<any>;
+  | UseSpec<FlowSpec.Request | FlowSpec.All | FlowSpec.Value>
+  | StreamLike<unknown>;
 
-type ILoopFunction<
+type IFlowLoopToolkit = Readonly<
+  IFlowToolkit & {
+    input: unknown;
+    iteration: number;
+    produce: <Type = unknown>(value: Type) => IPromise<Type>;
+  }
+>;
+
+export type IFlowLoopFunction<
   LoopContext extends Record<any, any> = Record<any, any>,
-  Output = unknown,
 > = (
   loopContext: LoopContext | null | undefined,
-  produce: (output: Output) => IPromise<unknown>,
+  tools: IFlowLoopToolkit,
 ) => IPromise<LoopContext | null | undefined | void>;
 
 export type IFlowToolkit = {
   // events
-  emit: <Event extends UseSpec<FlowSpec.Event>>(
+  emit: <Event extends UseSpec<FlowSpec.Event>, Payload = unknown>(
     event: Event,
-    payload: unknown,
+    payload: Payload,
   ) => IPromise;
 
   // sub-requests
@@ -197,36 +210,45 @@ export type IFlowToolkit = {
     ? IPromise<unknown[]>
     : IPromise<unknown>;
 
-  stream: <Value extends IFlowToolkitStreamingValue>(
+  stream: <Value extends IFlowToolkitStreamingValue, Output = unknown>(
     value: Value,
-  ) => AsyncIterable<unknown>;
+  ) => AsyncIterable<Output>;
 
-  toArray: <Value extends IFlowToolkitStreamingValue | unknown>(
+  toArray: <
+    Value extends IFlowToolkitStreamingValue | unknown,
+    Output = unknown,
+  >(
     value: Value,
-  ) => IPromise<unknown[]>;
-
-  // loop
-  loop: <LoopContext extends Record<any, any>, Output = unknown>(
-    fn: ILoopFunction<LoopContext, Output>,
-  ) => UseSpec<FlowSpec.Loop>;
+  ) => IPromise<Output[]>;
 
   // state manipulation
-  has: (value: UseSpec<FlowSpec.State>) => boolean;
-  get: <Value extends UseSpec<FlowSpec.State>>(value: Value) => unknown;
-  set: <Value extends UseSpec<FlowSpec.State | FlowSpec.Entity>>(
-    value: Value,
-    payload: unknown,
-  ) => unknown;
-  del: (value: UseSpec<FlowSpec.State>) => unknown;
+  has: (subject: UseSpec<FlowSpec.State>) => Promise<boolean>;
+
+  get: <
+    Subject extends UseSpec<FlowSpec.State | FlowSpec.Entity>,
+    Output = unknown,
+  >(
+    value: Subject,
+  ) => Promise<
+    Subject extends UseSpec<FlowSpec.Entity> ? AsyncIterable<Output> : Output
+  >;
+
+  set: <
+    Subject extends UseSpec<FlowSpec.State | FlowSpec.Entity>,
+    Payload = unknown,
+  >(
+    subject: Subject,
+    payload: Payload,
+  ) => Promise<unknown>;
+
+  del: (value: UseSpec<FlowSpec.State> | string) => Promise<unknown>;
 };
 
 type IHandlerAsFunction<Input = unknown> = (
   input: Input,
   toolkit: IFlowToolkit,
 ) => IPromise<
-  | undefined
-  | void
-  | UseSpec<FlowSpec.Request | FlowSpec.Value | FlowSpec.All | FlowSpec.Loop>
+  undefined | void | UseSpec<FlowSpec.Request | FlowSpec.Value | FlowSpec.All>
 >;
 
 // output of this function is what will be the result of the requested command/query
@@ -237,10 +259,16 @@ type IResolutionFunction<Input = unknown, Output = unknown> = (
 
 type IThenChainingHandler =
   | IHandlerAsFunction
-  | UseSpec<FlowSpec.Handler | FlowSpec.Resolve | FlowSpec.Reject>;
+  | UseSpec<
+      | FlowSpec.Handler
+      | FlowSpec.Resolve
+      | FlowSpec.Reject
+      | FlowSpec.Loop
+      | FlowSpec.Map
+    >;
 
 const _dataType = Symbol('_dataType');
-export type IFlowSpecState<Type = unknown> = IType<
+export type IFlowSpecState<Type = any> = IType<
   {
     type: FlowSpec.State;
     name: string;
@@ -251,7 +279,7 @@ export type IFlowSpecState<Type = unknown> = IType<
   }
 >;
 
-export type IFlowSpecEntity<EntityType = unknown> = IType<
+export type IFlowSpecEntity<EntityType = any> = IType<
   {
     type: FlowSpec.Entity;
     name: string;

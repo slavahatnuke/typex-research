@@ -280,8 +280,17 @@ describe(SpecifyFlow.name, () => {
         resolve,
         reject,
         query,
+        loop,
+        map,
+        entity,
+        state,
       }) => {
         const createUser = command('CreateUser', 'Creates a user');
+        const users = entity<{ id: string; name: string }>(
+          'users',
+          'Users',
+          ({ id }) => String(id),
+        );
 
         // case 1 / sync
         when(createUser).then(
@@ -296,39 +305,27 @@ describe(SpecifyFlow.name, () => {
           .then(async (input, { emit, call, request }) => {
             return request('GetUser', { userId: '123' });
           })
-          .then(async (user, { value }) => {
-            return value(user);
+          .then(
+            loop(async (loopContext, { produce, input: user, emit }) => {
+              await produce(user);
+              return null; // next context; null means exit;
+            }),
+          )
+          .then(
+            // consider value or stream of values like an item and handle item by item and returns the stream to the next step;
+            map(async (user, { value, set }) => {
+              await set(users, user);
+              return value(user);
+            }),
+          )
+          .then(async (userStream, { value, toArray }) => {
+            const users = await toArray(userStream);
+            return value(users[0]);
           })
           .then(
-            async (
-              user,
-              { all, value, request, waitFor, toArray, stream, loop },
-            ) => {
+            async (user, { all, value, request, waitFor, toArray, stream }) => {
               // pooling
               await waitFor(() => true);
-
-              // loops
-              const loopResults = await waitFor(
-                loop<{ page: number }>((fetchingContext) => {
-                  if (fetchingContext) {
-                    if (fetchingContext.page > 10) {
-                      return null;
-                    }
-
-                    return { page: fetchingContext.page + 1 };
-                  }
-                  return { page: 1 };
-                }),
-              );
-
-              const loopToStream = stream(
-                loop((loopContext, produce) => {
-                  produce('LoopIsOk');
-                  return null;
-                }),
-              );
-
-              const loopResultsFromStream = await toArray(loopToStream);
 
               // in case of request
               const resultInSync = await waitFor(
@@ -349,11 +346,7 @@ describe(SpecifyFlow.name, () => {
               const results = await toArray(streamOfResultsInSync);
 
               // async approach
-              // return all([value(user), request('GetUser', { userId: '345' })]);
-
-              // async approach for loop
-              return all(loop(() => null));
-              // return loop(() => null);
+              return all([value(user), request('GetUser', { userId: '345' })]);
             },
           )
           .then(

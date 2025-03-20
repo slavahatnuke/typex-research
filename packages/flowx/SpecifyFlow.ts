@@ -1,5 +1,11 @@
 import { IPromise, IType, IUseType, NewError } from '@slavax/typex';
-import { FlowSpec, IFlowSpecEntity, IFlowSpecState, UseSpec } from './index';
+import {
+  FlowSpec,
+  IFlowLoopFunction,
+  IFlowSpecEntity, IFlowSpecMapFunction,
+  IFlowSpecState,
+  UseSpec,
+} from './index';
 import { fastId, INewId } from '@slavax/funx/fastId';
 
 type IWhenOutput = Readonly<{
@@ -37,6 +43,9 @@ export type ISpecifyFlowLanguage = {
   when: <Subject extends UseSpec<FlowSpec.When>['subject']>(
     subject: Subject,
   ) => IWhenOutput; // when
+
+  loop: (fn: IFlowLoopFunction) => UseSpec<FlowSpec.Loop>; // loop
+  map: (fn: IFlowSpecMapFunction) => UseSpec<FlowSpec.Map>; // map
 
   resolve: <Subject extends UseSpec<FlowSpec.Resolve>['subject']>(
     subject: Subject,
@@ -202,6 +211,16 @@ export function SpecifyFlow<Meta = undefined>(
 
           return WhenOutput(when);
         },
+
+        loop: (handler: IFlowLoopFunction) => ({
+          type: FlowSpec.Loop,
+          handler,
+        }),
+
+        map: (handler: IFlowSpecMapFunction) => ({
+          type: FlowSpec.Map,
+          handler,
+        }),
 
         resolve: (subject, handler) => ({
           type: FlowSpec.Resolve,
