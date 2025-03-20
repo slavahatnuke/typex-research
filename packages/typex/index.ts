@@ -98,7 +98,7 @@ export type IEvent<
 >;
 
 export type IError<Type extends IType> = IType<
-  Error & { type: Type['type']; data: Type }
+  Error & { type: Type['type']; data: Type; origin?: Error }
 >;
 
 // model
