@@ -4,8 +4,8 @@ export type IType<Type extends { type: string } = { type: string }> =
   Readonly<Type>;
 
 export type IUseType<
-  Unit extends IType | never | void | unknown,
-  Type extends string,
+  Unit extends IType,
+  Type extends Unit['type'],
 > = Unit extends IType ? Extract<Unit, { type: Type }> : never;
 
 // helpers

@@ -153,9 +153,16 @@ export function UpgradeType<
             _input = output;
           }
         } else {
-          throw new Error(
-            `${UpgradeType.name}/NoUpgradeFunction:${JSON.stringify(_input.type)}`,
-          );
+          if (input.type === targetVersion) {
+            return input as IUseType<
+              Versions,
+              ITargetVersion<Versions, TargetVersion>
+            >;
+          } else {
+            throw new Error(
+              `${UpgradeType.name}/NoUpgradeFunction:${JSON.stringify(_input.type)}`,
+            );
+          }
         }
       } else {
         throw new Error(
