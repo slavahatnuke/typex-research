@@ -5,7 +5,7 @@ export type IType<Type extends { type: string } = { type: string }> =
 
 export type IUseType<
   Unit extends IType,
-  Type extends Unit['type'],
+  Type extends Unit['type'] | string,
 > = Unit extends IType ? Extract<Unit, { type: Type }> : never;
 
 // helpers
