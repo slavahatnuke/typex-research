@@ -55,12 +55,10 @@ type IFlowSpecWhen = IType<{
 }>;
 type IFlowSpecThen = IType<{
   type: FlowSpec.Then;
-  whenId: string;
   handler: IThenChainingHandler;
 }>;
 type IFlowSpecCatch = IType<{
   type: FlowSpec.Catch;
-  whenId: string;
   handler: IThenChainingHandler;
 }>;
 type IFlowSpecHandler = IType<{
@@ -71,7 +69,6 @@ type IFlowSpecAll = IType<{
   type: FlowSpec.All;
   values: StreamLike<UseSpec<FlowSpec.Request | FlowSpec.Value>>;
 }>;
-// TODO {{WIP}} @slava loop should be in then; when(x).then(loop(() => ...))
 type IFlowSpecLoop = IType<{
   type: FlowSpec.Loop;
   handler: IFlowLoopFunction;
@@ -244,12 +241,12 @@ export type IFlowToolkit = {
   del: (value: UseSpec<FlowSpec.State> | string) => Promise<unknown>;
 };
 
+type IFlowAwaitable = UseSpec<FlowSpec.Request | FlowSpec.Value | FlowSpec.All>;
+
 type IHandlerAsFunction<Input = unknown> = (
   input: Input,
   toolkit: IFlowToolkit,
-) => IPromise<
-  undefined | void | UseSpec<FlowSpec.Request | FlowSpec.Value | FlowSpec.All>
->;
+) => IPromise<undefined | void | IFlowAwaitable>;
 
 // output of this function is what will be the result of the requested command/query
 type IResolutionFunction<Input = unknown, Output = unknown> = (
@@ -297,5 +294,5 @@ export type IFlowSpecDataType<Type = unknown> = IType<{
 
 export type IFlowSpecValue<Value = unknown> = IType<{
   type: FlowSpec.Value;
-  value: Value;
+  value: Value | Promise<Value>;
 }>;

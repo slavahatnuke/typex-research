@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { SpecifyFlow } from './SpecifyFlow';
-import { FastIncrementalId } from '@slavax/funx/fastId';
 import { StreamX } from '@slavax/streamx';
 
 describe(SpecifyFlow.name, () => {
   it('should return an array of commands, queries, events, and whens', () => {
-    const specify = SpecifyFlow(undefined, { NewId: FastIncrementalId() });
+    const specify = SpecifyFlow(undefined);
 
     const spec = specify(
       ({
@@ -267,7 +266,7 @@ describe(SpecifyFlow.name, () => {
   });
 
   it('works v2', () => {
-    const specify = SpecifyFlow(undefined, { NewId: FastIncrementalId() });
+    const specify = SpecifyFlow(undefined);
 
     const spec = specify(
       ({

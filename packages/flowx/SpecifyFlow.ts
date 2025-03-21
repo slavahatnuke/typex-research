@@ -2,11 +2,11 @@ import { IPromise, IType, IUseType, NewError } from '@slavax/typex';
 import {
   FlowSpec,
   IFlowLoopFunction,
-  IFlowSpecEntity, IFlowSpecMapFunction,
+  IFlowSpecEntity,
+  IFlowSpecMapFunction,
   IFlowSpecState,
   UseSpec,
 } from './index';
-import { fastId, INewId } from '@slavax/funx/fastId';
 
 type IWhenOutput = Readonly<{
   then: (input: UseSpec<FlowSpec.Then>['handler']) => IWhenOutput;
@@ -87,22 +87,20 @@ type ISpecifyFlowDefinition = UseSpec<
   | FlowSpec.Entity
 >;
 
-export type ISpecifyFlowMeta = Readonly<{ id: string; meta: unknown }>;
-export type ISpecifyFlowOutput = ISpecifyFlowDefinition & ISpecifyFlowMeta;
+export type ISpecifyFlowMeta<Meta = any> = Readonly<{ meta: Meta }>;
+export type ISpecifyFlowOutput<Meta = any> = ISpecifyFlowDefinition &
+  ISpecifyFlowMeta<Meta>;
 
 type UseSpecifyFlowOutput<Type extends ISpecifyFlowOutput['type']> = IUseType<
   ISpecifyFlowOutput,
   Type
 >;
 
-export type ISpecifyFlow = (
+export type ISpecifyFlow<Meta = any> = (
   specifier: (language: ISpecifyFlowLanguage) => unknown,
-) => ISpecifyFlowOutput[];
+) => ISpecifyFlowOutput<Meta>[];
 
-export function SpecifyFlow<Meta = undefined>(
-  meta: Meta,
-  { NewId = fastId }: Partial<{ NewId: INewId }> = {},
-): ISpecifyFlow {
+export function SpecifyFlow<Meta = undefined>(meta: Meta): ISpecifyFlow<Meta> {
   return function defineFlow(
     specifier: (language: ISpecifyFlowLanguage) => unknown,
   ) {
@@ -121,7 +119,6 @@ export function SpecifyFlow<Meta = undefined>(
 
       const item = {
         ...output,
-        id: String(NewId()),
         meta,
       };
 
@@ -139,7 +136,6 @@ export function SpecifyFlow<Meta = undefined>(
 
           when.steps.push({
             type: FlowSpec.Then,
-            whenId: when.id,
             handler: input,
           });
 
@@ -150,7 +146,6 @@ export function SpecifyFlow<Meta = undefined>(
 
           when.steps.push({
             type: FlowSpec.Catch,
-            whenId: when.id,
             handler: input,
           });
 
