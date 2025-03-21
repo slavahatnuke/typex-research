@@ -3,8 +3,13 @@ import { IType } from './index';
 
 export type IHumanizeTypeOutput<T extends any | IType> = T extends IType
   ? IType<T & { type_: string }>
-  : T;
-export type IHumanizeType = <T extends any | IType>(
+  : T extends Array<IType> | ReadonlyArray<IType>
+    ? IHumanizeTypeOutput<T[number]>[]
+    : T;
+
+export type IHumanizeType = <
+  T extends any | IType | Array<IType> | ReadonlyArray<IType> | Error | Error[],
+>(
   value: T,
 ) => IHumanizeTypeOutput<T>;
 
@@ -31,6 +36,15 @@ export function HumanizeType(
       mapLoaded = true;
     }
 
+    if (
+      value &&
+      typeof value === 'object' &&
+      'type' in value &&
+      'type_' in value
+    ) {
+      return value as IHumanizeTypeOutput<T>;
+    }
+
     if (value instanceof Error && 'type' in value) {
       const error = new Error(value.message);
       Object.assign(error, value);
@@ -42,11 +56,7 @@ export function HumanizeType(
       return value.map(humanizeType) as unknown as IHumanizeTypeOutput<T>;
     }
 
-    if (
-      typeof value === 'object' &&
-      value !== null &&
-      !(value instanceof Date)
-    ) {
+    if (typeof value === 'object' && value && !(value instanceof Date)) {
       let result = {} as unknown as IHumanizeTypeOutput<T>;
 
       if ('type' in value) {
