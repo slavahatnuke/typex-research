@@ -44,11 +44,7 @@ describe(UpgradeType.name, () => {
           id: user.id,
           firstName,
           lastName,
-          // email: `${firstName
-          //   .charAt(0)
-          //   .toLowerCase()}.${lastName.toLowerCase()}@company.domain`,
         };
-        // satisfies IUseType<IUserVersions, 'UserV3'>;
       })
       .upgrade('UserV2', 'UserV3', (input) => {
         return {

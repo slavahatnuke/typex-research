@@ -149,6 +149,17 @@ export function UpgradeType<
               Versions,
               ITargetVersion<Versions, TargetVersion>
             >;
+          }
+          if (_input.type === output.type && output.type !== targetVersion) {
+            throw new Error(
+              `${UpgradeType.name}/InvalidUpgrade:${JSON.stringify({
+                input: _input,
+                output,
+                targetVersion,
+                inputType: _input.type,
+                outputType: output.type,
+              })}`,
+            );
           } else {
             _input = output;
           }
