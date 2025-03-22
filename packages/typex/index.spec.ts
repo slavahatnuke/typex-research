@@ -10,6 +10,7 @@ import {
   IQuery,
   IServiceEvent,
   IServiceFunctions,
+  IsType,
   Service,
   ServiceCall,
   ServiceFunctions,
@@ -269,5 +270,28 @@ describe(InMemoryBus.name, () => {
         userId: 'userId123',
       },
     ]);
+  });
+});
+
+describe(IsType.name, () => {
+  it('works', async () => {
+    const isUserCreated = IsType<IUserEvents>(['UserCreated']);
+
+    const event: IUserEvents = { type: 'UserCreated', userId: 'userId123' };
+
+    expect(isUserCreated(event)).toEqual(true);
+
+    if (isUserCreated(event)) {
+      expect(event.type).toEqual('UserCreated');
+    }
+
+    expect(
+      isUserCreated({ type: 'UserCreated_123', userId: 'userId123' }),
+    ).toBe(false);
+
+    expect(isUserCreated(null)).toBe(false);
+
+    expect(isUserCreated(undefined)).toBe(false);
+    expect(isUserCreated(true)).toBe(false);
   });
 });

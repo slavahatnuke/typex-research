@@ -610,3 +610,19 @@ export type IBusSubscriber<Type extends Record<any, any>> = (
 ) => IPromise<unknown>;
 
 export type IBusUnsubscribe = () => unknown;
+
+// IsType
+
+export function IsType<
+  Union extends IType,
+  Types extends Union['type'] = Union['type'],
+>(types: ReadonlyArray<Types>) {
+  const set = new Set<Types>(types);
+  return (type: Union | any): type is IUseType<Union, Types> =>
+    !!(
+      type &&
+      type instanceof Object &&
+      'type' in type &&
+      set.has(type.type as Types)
+    );
+}
