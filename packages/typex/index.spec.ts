@@ -11,6 +11,7 @@ import {
   IServiceEvent,
   IServiceFunctions,
   IsType,
+  NewError,
   Service,
   ServiceCall,
   ServiceFunctions,
@@ -293,5 +294,25 @@ describe(IsType.name, () => {
 
     expect(isUserCreated(undefined)).toBe(false);
     expect(isUserCreated(true)).toBe(false);
+  });
+});
+
+describe(NewError.name, () => {
+  it('works', async () => {
+    const DatabaseError = NewError<{ type: 'DatabaseError'; tenant: string }>(
+      'DatabaseError',
+    );
+
+    const databaseError = DatabaseError({
+      tenant: 'tenant-1',
+    });
+
+    expect(databaseError).instanceOf(Error);
+
+    expect(databaseError.type).toEqual('DatabaseError');
+    expect(databaseError.data).toEqual({
+      type: 'DatabaseError',
+      tenant: 'tenant-1',
+    });
   });
 });

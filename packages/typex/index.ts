@@ -155,16 +155,32 @@ export function NewError<Type extends IType>(
       // @ts-ignore
       this.data = { ...payload, type };
       this.origin = origin;
+
+      let messageContext: string = '';
+
+      try {
+        messageContext = JSON.stringify(this.data, null, 2);
+      } catch (error) {
+        // ignore
+      }
+
+      this.message = `${this.message}\n${messageContext}`;
     }
 
     toJSON() {
       return {
         ...this,
         type: this.type,
+        message: this.message,
         name: this.name,
         stack: this.stack,
         data: this.data,
+        origin: this.origin,
       };
+    }
+
+    toString() {
+      return 'hello';
     }
   }
 
