@@ -152,5 +152,7 @@ describe(UpgradeType.name, () => {
       lastName: 'Doe',
       type: 'UserV2',
     });
+
+    expect(await upgradeUser2(user2)).toEqual(user2);
   });
 });
