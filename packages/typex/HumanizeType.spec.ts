@@ -114,7 +114,7 @@ describe(HumanizeType.name, () => {
   });
   it('should return the human type of a nested object', () => {
     const humanizeType = HumanizeType({
-      Tag,
+      Tag: Tag,
     });
 
     const event: ITag = {
