@@ -1,5 +1,5 @@
-import { HumanizeType } from './HumanizeType';
-import { IType } from './index';
+
+import { HumanizeType, IType } from './index';
 import { describe, expect, it } from 'vitest';
 
 enum Tag {

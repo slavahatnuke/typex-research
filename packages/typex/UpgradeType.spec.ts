@@ -1,5 +1,4 @@
-import { IType, IUseType } from './index';
-import { IUpgradedType, UpgradeType } from './UpgradeType';
+import { IType, IUpgradedType, IUseType, UpgradeType } from './index';
 
 import { describe, expect, it } from 'vitest';
 

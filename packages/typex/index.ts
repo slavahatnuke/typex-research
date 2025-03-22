@@ -1,5 +1,7 @@
 // type
 
+import { normalizeError } from './lib/normalizeError';
+
 export type IType<Type extends { type: string } = { type: string }> =
   Readonly<Type>;
 
@@ -642,3 +644,287 @@ export function IsType<
       set.has(type.type as Types)
     );
 }
+
+// HumanizeType
+export type IHumanizeTypeOutput<T extends any | IType> = T extends IType
+  ? IType<T & { type_: string }>
+  : T extends Array<IType> | ReadonlyArray<IType>
+    ? IHumanizeTypeOutput<T[number]>[]
+    : T;
+export type IHumanizeType = <
+  T extends any | IType | Array<IType> | ReadonlyArray<IType> | Error | Error[],
+>(
+  value: T,
+) => IHumanizeTypeOutput<T>;
+
+export function HumanizeType(
+  enums: Record<string, Record<string, string>>,
+): IHumanizeType {
+  const map: { [P in string]: string | undefined } = {};
+  let mapLoaded = false;
+
+  const loadMap = () => {
+    for (const enumName of Object.keys(enums)) {
+      for (const key of Object.keys(enums[enumName])) {
+        const id = enums[enumName][key];
+        map[id] = `${enumName}.${key}`;
+      }
+    }
+  };
+
+  const humanizeType: IHumanizeType = <T extends any | IType>(
+    value: T,
+  ): IHumanizeTypeOutput<T> => {
+    if (!mapLoaded) {
+      loadMap();
+      mapLoaded = true;
+    }
+
+    if (
+      value &&
+      typeof value === 'object' &&
+      'type' in value &&
+      'type_' in value
+    ) {
+      return value as IHumanizeTypeOutput<T>;
+    }
+
+    if (value instanceof Error && 'type' in value) {
+      const error = new Error(value.message);
+      Object.assign(error, value);
+      Object.assign(error, humanizeType(normalizeError(error)));
+      return error as unknown as IHumanizeTypeOutput<T>;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map(humanizeType) as unknown as IHumanizeTypeOutput<T>;
+    }
+
+    if (typeof value === 'object' && value && !(value instanceof Date)) {
+      let result = {} as unknown as IHumanizeTypeOutput<T>;
+
+      if ('type' in value) {
+        result = {
+          ...value,
+          type: value.type,
+          type_: map[value.type as string] ?? '',
+        } as IHumanizeTypeOutput<T>;
+      } else {
+        result = { ...value } as IHumanizeTypeOutput<T>;
+      }
+
+      for (const key of Object.keys(value)) {
+        // @ts-ignore
+        result[key] = humanizeType(value[key]);
+      }
+
+      return result as unknown as IHumanizeTypeOutput<T>;
+    }
+
+    return value as unknown as IHumanizeTypeOutput<T>;
+  };
+
+  return humanizeType;
+}
+
+// UpgradeType
+export type IUpgradeTypeFunction<
+  Versions extends IType,
+  TargetVersion extends Versions['type'],
+> = (type: Versions) => IPromise<IUseType<Versions, TargetVersion>>;
+
+export type IUpgradeTypeConfigurationChain<
+  Config extends Readonly<{
+    AllVersions: IType;
+    TargetVersion: IType;
+
+    NextVersionToUpgrade: string;
+    NextVersionsToOutput: string;
+  }>,
+> = Readonly<{
+  take: IUpgradeTakeFunction<{
+    VersionsToTake: Config['AllVersions'];
+    TargetVersion: Config['TargetVersion'];
+  }>;
+  upgrade: IUpgradeConfigurationFunction<{
+    AllVersions: Config['AllVersions'];
+    TargetVersion: Config['TargetVersion'];
+    NextVersionToUpgrade: Config['NextVersionToUpgrade'];
+    NextVersionsToOutput: Config['NextVersionsToOutput'];
+  }>;
+}>;
+export type IUpgradeType<
+  Config extends Readonly<{
+    AllVersions: IType;
+    TargetVersion: IType;
+
+    NextVersionToUpgrade: string;
+    NextVersionsToOutput: string;
+  }>,
+> = Config['NextVersionsToOutput'] extends never
+  ? IUpgradeTypeFunction<Config['AllVersions'], Config['NextVersionToUpgrade']>
+  : ((input: `UpgradeType:${Config['NextVersionToUpgrade']}`) => never) &
+      IUpgradeTypeConfigurationChain<Config>;
+type IUpgradeTakeFunction<
+  Config extends Readonly<{
+    VersionsToTake: IType;
+    TargetVersion: IType;
+  }>,
+> = <Type extends Config['VersionsToTake']['type']>(
+  type: Type,
+) => IUpgradeType<{
+  AllVersions: Config['VersionsToTake'];
+  TargetVersion: Config['TargetVersion'];
+  NextVersionToUpgrade: Type;
+  NextVersionsToOutput: Exclude<Config['VersionsToTake']['type'], Type>;
+}>;
+
+type IUpgradeConfigurationFunction<
+  Config extends Readonly<{
+    AllVersions: IType;
+    TargetVersion: IType;
+    NextVersionToUpgrade: string;
+    NextVersionsToOutput: string;
+  }>,
+> = <
+  FromType extends Config['NextVersionToUpgrade'],
+  ToType extends Config['NextVersionsToOutput'],
+  Output extends ToType,
+>(
+  from: FromType,
+  to: ToType,
+  upgrade: (
+    input: IUseType<Config['AllVersions'], FromType>,
+  ) => IPromise<IUseType<Config['AllVersions'], Output>>,
+) => IUpgradeType<{
+  AllVersions: Config['AllVersions'];
+  TargetVersion: Config['TargetVersion'];
+
+  NextVersionToUpgrade: Output;
+  NextVersionsToOutput: Exclude<
+    Config['NextVersionsToOutput'],
+    FromType | ToType | Output
+  >;
+}>;
+
+type IUpgradeTargetVersion<
+  Versions extends IType,
+  TargetVersion extends Versions['type'] | Versions,
+> = TargetVersion extends IType ? TargetVersion['type'] : TargetVersion;
+
+type IUpgradeTypeOutput<
+  Versions extends IType,
+  TargetVersion extends Versions['type'] | Versions,
+> = IUpgradeType<{
+  AllVersions: Versions;
+  TargetVersion: IUseType<
+    Versions,
+    IUpgradeTargetVersion<Versions, TargetVersion>
+  >;
+  NextVersionToUpgrade: Versions['type'];
+  NextVersionsToOutput: Versions['type'];
+}>;
+type IUpgradeMigrationRegistry<Versions extends IType> = {
+  [Type in Versions['type']]?: (
+    input: IUseType<Versions, Type>,
+  ) => IPromise<Versions>;
+};
+
+export function UpgradeType<
+  Versions extends IType,
+  TargetVersion extends Versions['type'] | Versions,
+>(
+  targetVersion: IUpgradeTargetVersion<Versions, TargetVersion>,
+  { maxIterations = 100_000 }: Partial<{ maxIterations: number }> = {},
+): IUpgradeTypeOutput<Versions, TargetVersion> {
+  const registry: IUpgradeMigrationRegistry<Versions> =
+    {} as IUpgradeMigrationRegistry<Versions>;
+
+  const chain: IUpgradeTypeConfigurationChain<{
+    AllVersions: Versions;
+    TargetVersion: IUseType<
+      Versions,
+      IUpgradeTargetVersion<Versions, TargetVersion>
+    >;
+    NextVersionToUpgrade: Versions['type'];
+    NextVersionsToOutput: Versions['type'];
+  }> = {
+    take: (type) => {
+      registry[type] = async (input) => {
+        return input as any;
+      };
+      return mapper as any;
+    },
+    upgrade: (from, to, upgrade) => {
+      registry[from] = upgrade;
+      return mapper as any;
+    },
+  };
+
+  const mapper: IUpgradeTypeFunction<
+    Versions,
+    IUpgradeTargetVersion<Versions, TargetVersion>
+  > = async (input) => {
+    let _input = input;
+    let iterations = 0;
+    while (iterations < maxIterations) {
+      iterations += 1;
+
+      if (_input && 'type' in _input) {
+        const handler = registry[_input.type as Versions['type']];
+
+        if (handler) {
+          const output = await handler(_input as any);
+          if (output.type === targetVersion) {
+            return output as IUseType<
+              Versions,
+              IUpgradeTargetVersion<Versions, TargetVersion>
+            >;
+          }
+          if (_input.type === output.type && output.type !== targetVersion) {
+            throw new Error(
+              `${UpgradeType.name}/InvalidUpgrade:${JSON.stringify({
+                input: _input,
+                output,
+                targetVersion,
+                inputType: _input.type,
+                outputType: output.type,
+              })}`,
+            );
+          } else {
+            _input = output;
+          }
+        } else {
+          if (input.type === targetVersion) {
+            return input as IUseType<
+              Versions,
+              IUpgradeTargetVersion<Versions, TargetVersion>
+            >;
+          } else {
+            throw new Error(
+              `${UpgradeType.name}/NoUpgradeFunction:${JSON.stringify(_input.type)}`,
+            );
+          }
+        }
+      } else {
+        throw new Error(
+          `${UpgradeType.name}/InvalidInput:${JSON.stringify(_input)}`,
+        );
+      }
+    }
+
+    throw new Error(
+      `${UpgradeType.name}/ExceededNumberOfIterations:${JSON.stringify({ iterations, input })}`,
+    );
+  };
+
+  return Object.assign(mapper, chain) as unknown as IUpgradeTypeOutput<
+    Versions,
+    TargetVersion
+  >;
+}
+
+export type IUpgradedType<
+  AllVersions extends IType,
+  TargetType extends AllVersions['type'],
+> = IUseType<AllVersions, TargetType>;
