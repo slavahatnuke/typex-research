@@ -165,7 +165,7 @@ export type IFlowSpecAwaitable = UseSpec<
   FlowSpec.Request | FlowSpec.All | FlowSpec.Value
 >;
 
-type IFlowSpecStreamLike = IFlowSpecAwaitable | IStreamLike<any>;
+export type IFlowSpecStreamLike = IFlowSpecAwaitable | IStreamLike<any>;
 
 type IFlowLoopToolkit = Readonly<
   IFlowToolkit & {
@@ -251,12 +251,10 @@ export type IFlowToolkit = {
   del: (value: UseSpec<FlowSpec.State> | string) => Promise<any>;
 };
 
-type IFlowAwaitable = UseSpec<FlowSpec.Request | FlowSpec.Value | FlowSpec.All>;
-
 type IHandlerAsFunction<Input = any> = (
   input: Input,
   toolkit: IFlowToolkit,
-) => IPromise<undefined | void | IFlowAwaitable>;
+) => IPromise<undefined | void | IFlowSpecAwaitable>;
 
 // output of this function is what will be the result of the requested command/query
 type IResolutionFunction<Input = any, Output = any> = (
