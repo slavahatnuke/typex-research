@@ -156,7 +156,7 @@ export function SpecifyFlow<Meta = undefined>(meta: Meta): ISpecifyFlow<Meta> {
 
     let specifying = true;
     try {
-      specifier({
+      const language: ISpecifyFlowLanguage = {
         command: (name, title) =>
           add({
             type: FlowSpec.Command,
@@ -248,7 +248,8 @@ export function SpecifyFlow<Meta = undefined>(meta: Meta): ISpecifyFlow<Meta> {
           type: FlowSpec.Rejected,
           subject,
         }),
-      });
+      };
+      specifier(language);
     } finally {
       specifying = false;
     }

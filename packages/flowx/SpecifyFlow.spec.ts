@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SpecifyFlow } from './SpecifyFlow';
 import { StreamX } from '@slavax/streamx';
 
+
 describe(SpecifyFlow.name, () => {
   it('should return an array of commands, queries, events, and whens', () => {
     const specify = SpecifyFlow(undefined);
@@ -62,38 +63,32 @@ describe(SpecifyFlow.name, () => {
     // ---
     expect(spec).toEqual([
       {
-        id: '0',
         meta: undefined,
         name: 'CreateUser',
         title: 'Creates a user',
         type: 'Command',
       },
       {
-        id: '1',
         meta: undefined,
         name: 'UserCreated',
         title: 'User created',
         type: 'Event',
       },
       {
-        id: '2',
         meta: undefined,
         name: 'UserNotCreated',
         title: 'User NOT created',
         type: 'Event',
       },
       {
-        id: '3',
         meta: undefined,
         steps: [
           {
             handler: expect.any(Function),
             type: 'Then',
-            whenId: '3',
           },
         ],
         subject: {
-          id: '0',
           meta: undefined,
           name: 'CreateUser',
           title: 'Creates a user',
@@ -102,18 +97,15 @@ describe(SpecifyFlow.name, () => {
         type: 'When',
       },
       {
-        id: '4',
         meta: undefined,
         steps: [
           {
             handler: expect.any(Function),
             type: 'Then',
-            whenId: '4',
           },
         ],
         subject: {
           subject: {
-            id: '0',
             meta: undefined,
             name: 'CreateUser',
             title: 'Creates a user',
@@ -124,14 +116,12 @@ describe(SpecifyFlow.name, () => {
         type: 'When',
       },
       {
-        id: '5',
         meta: undefined,
         steps: [
           {
             handler: {
               handler: expect.any(Function),
               subject: {
-                id: '0',
                 meta: undefined,
                 name: 'CreateUser',
                 title: 'Creates a user',
@@ -140,11 +130,9 @@ describe(SpecifyFlow.name, () => {
               type: 'Resolve',
             },
             type: 'Then',
-            whenId: '5',
           },
         ],
         subject: {
-          id: '1',
           meta: undefined,
           name: 'UserCreated',
           title: 'User created',
@@ -153,14 +141,12 @@ describe(SpecifyFlow.name, () => {
         type: 'When',
       },
       {
-        id: '6',
         meta: undefined,
         steps: [
           {
             handler: {
               handler: expect.any(Function),
               subject: {
-                id: '0',
                 meta: undefined,
                 name: 'CreateUser',
                 title: 'Creates a user',
@@ -169,11 +155,9 @@ describe(SpecifyFlow.name, () => {
               type: 'Reject',
             },
             type: 'Then',
-            whenId: '6',
           },
         ],
         subject: {
-          id: '2',
           meta: undefined,
           name: 'UserNotCreated',
           title: 'User NOT created',
@@ -182,18 +166,15 @@ describe(SpecifyFlow.name, () => {
         type: 'When',
       },
       {
-        id: '7',
         meta: undefined,
         steps: [
           {
             handler: expect.any(Function),
             type: 'Then',
-            whenId: '7',
           },
         ],
         subject: {
           subject: {
-            id: '0',
             meta: undefined,
             name: 'CreateUser',
             title: 'Creates a user',
@@ -204,18 +185,15 @@ describe(SpecifyFlow.name, () => {
         type: 'When',
       },
       {
-        id: '8',
         meta: undefined,
         steps: [
           {
             handler: expect.any(Function),
             type: 'Then',
-            whenId: '8',
           },
         ],
         subject: {
           subject: {
-            id: '0',
             meta: undefined,
             name: 'CreateUser',
             title: 'Creates a user',
@@ -226,21 +204,18 @@ describe(SpecifyFlow.name, () => {
         type: 'When',
       },
       {
-        id: '9',
         meta: undefined,
         name: 'GetUser',
         title: 'Get a user',
         type: 'Query',
       },
       {
-        id: '10',
         meta: undefined,
         steps: [
           {
             handler: {
               handler: expect.any(Function),
               subject: {
-                id: '9',
                 meta: undefined,
                 name: 'GetUser',
                 title: 'Get a user',
@@ -249,11 +224,9 @@ describe(SpecifyFlow.name, () => {
               type: 'Resolve',
             },
             type: 'Then',
-            whenId: '10',
           },
         ],
         subject: {
-          id: '9',
           meta: undefined,
           name: 'GetUser',
           title: 'Get a user',
