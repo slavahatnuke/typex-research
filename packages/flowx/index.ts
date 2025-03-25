@@ -67,7 +67,7 @@ type IFlowSpecHandler = IType<{
 }>;
 type IFlowSpecAll = IType<{
   type: FlowSpec.All;
-  values: StreamLike<UseSpec<FlowSpec.Request | FlowSpec.Value>>;
+  values: IStreamLike<UseSpec<FlowSpec.Request | FlowSpec.Value>>;
 }>;
 type IFlowSpecLoop = IType<{
   type: FlowSpec.Loop;
@@ -80,85 +80,98 @@ type IFlowSpecMap = IType<{
   handler: IFlowSpecMapFunction;
 }>;
 
+type IFlowCommand = IType<{
+  type: FlowSpec.Command;
+  name: string;
+  title: string;
+}>;
+type IFlowEvent = IType<{
+  type: FlowSpec.Event;
+  name: string;
+  title: string;
+}>;
+type IFlowQuery = IType<{
+  type: FlowSpec.Query;
+  name: string;
+  title: string;
+}>;
+type IFlowSpecResolve = IType<{
+  type: FlowSpec.Resolve;
+  subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
+  handler: IResolutionFunction;
+}>;
+type IFlowSpecReject = IType<{
+  type: FlowSpec.Reject;
+  subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
+  handler: IResolutionFunction;
+}>;
+type IFlowSpecHappened = IType<{
+  type: FlowSpec.Happened;
+  subject: UseSpec<FlowSpec.Event>;
+}>;
+type IFlowSpecRequested = IType<{
+  type: FlowSpec.Requested;
+  subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
+}>;
+type IFlowSpecResolved = IType<{
+  type: FlowSpec.Resolved;
+  subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
+}>;
+type IFlowSpecRejected = IType<{
+  type: FlowSpec.Rejected;
+  subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
+}>;
+type IFlowSpecRequest = IType<{
+  type: FlowSpec.Request;
+  id: UseSpec<FlowSpec.RequestId>;
+  name: string;
+  input: any;
+}>;
+type IFlowSpecRequestId = IType<{
+  type: FlowSpec.RequestId;
+  id: string;
+  parent?: UseSpec<FlowSpec.RequestId>;
+}>;
 export type IFlowSpec =
-  | IType<{
-      type: FlowSpec.Command;
-      name: string;
-      title: string;
-    }>
-  | IType<{
-      type: FlowSpec.Event;
-      name: string;
-      title: string;
-    }>
-  | IType<{
-      type: FlowSpec.Query;
-      name: string;
-      title: string;
-    }>
+  | IFlowCommand
+  | IFlowEvent
+  | IFlowQuery
   | IFlowSpecState
   | IFlowSpecEntity
   | IFlowSpecWhen
   | IFlowSpecThen
   | IFlowSpecCatch
   | IFlowSpecHandler
-  | IType<{
-      type: FlowSpec.Resolve;
-      subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
-      handler: IResolutionFunction;
-    }>
-  | IType<{
-      type: FlowSpec.Reject;
-      subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
-      handler: IResolutionFunction;
-    }>
-  | IType<{
-      type: FlowSpec.Happened;
-      subject: UseSpec<FlowSpec.Event>;
-    }>
-  | IType<{
-      type: FlowSpec.Requested;
-      subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
-    }>
-  | IType<{
-      type: FlowSpec.Resolved;
-      subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
-    }>
-  | IType<{
-      type: FlowSpec.Rejected;
-      subject: UseSpec<FlowSpec.Command | FlowSpec.Query>;
-    }>
-  | IType<{
-      type: FlowSpec.Request;
-      id: UseSpec<FlowSpec.RequestId>;
-      name: string;
-      input: unknown;
-    }>
-  | IType<{
-      type: FlowSpec.RequestId;
-      id: string;
-      parent?: UseSpec<FlowSpec.RequestId>;
-    }>
+  | IFlowSpecResolve
+  | IFlowSpecReject
+  | IFlowSpecHappened
+  | IFlowSpecRequested
+  | IFlowSpecResolved
+  | IFlowSpecRejected
+  | IFlowSpecRequest
+  | IFlowSpecRequestId
   | IFlowSpecValue
   | IFlowSpecAll
   | IFlowSpecLoop
   | IFlowSpecMap;
 
-type StreamLike<Type> =
+type IStreamLike<Type> =
   | AsyncIterable<Type>
   | Iterable<Type>
   | Type[]
   | ReadonlyArray<Type>;
 
-type IFlowToolkitStreamingValue =
-  | UseSpec<FlowSpec.Request | FlowSpec.All | FlowSpec.Value>
-  | StreamLike<unknown>;
+export type IFlowSpecAwaitable = UseSpec<
+  FlowSpec.Request | FlowSpec.All | FlowSpec.Value
+>;
+
+type IFlowSpecStreamLike = IFlowSpecAwaitable | IStreamLike<any>;
 
 type IFlowLoopToolkit = Readonly<
   IFlowToolkit & {
-    input: unknown;
+    input: any;
     iteration: number;
-    produce: <Type = unknown>(value: Type) => IPromise<Type>;
+    produce: <Type = any>(value: Type) => IPromise<Type>;
   }
 >;
 
@@ -171,24 +184,24 @@ export type IFlowLoopFunction<
 
 export type IFlowToolkit = {
   // events
-  emit: <Event extends UseSpec<FlowSpec.Event>, Payload = unknown>(
+  emit: <Event extends UseSpec<FlowSpec.Event>, Payload = any>(
     event: Event,
     payload: Payload,
   ) => IPromise;
 
   // sub-requests
-  call: <Input = unknown, Output = unknown>(
+  call: <Input = any, Output = any>(
     name: string | UseSpec<FlowSpec.Command | FlowSpec.Query>, // command or query name
     input: Input, // payload
   ) => IPromise<Output>;
 
-  request: <Input = unknown>(
+  request: <Input = any>(
     name: string | UseSpec<FlowSpec.Command | FlowSpec.Query>, // command or query name
     input: Input, // payload
   ) => UseSpec<FlowSpec.Request>;
 
   // values
-  value: <Type = unknown>(value: Type) => IFlowSpecValue<Type>;
+  value: <Type = any>(value: Type) => IFlowSpecValue<Type>;
 
   // wait for all values to be resolved;
   all: <Values extends UseSpec<FlowSpec.All>['values']>(
@@ -197,24 +210,21 @@ export type IFlowToolkit = {
 
   waitFor: <
     Value extends
-      | IFlowToolkitStreamingValue // realtime, active values
+      | IFlowSpecStreamLike // realtime, active values
       | (() => IPromise<boolean>), // pooling / in case of a function
   >(
     value: Value,
     poolingInterval?: number | (() => number),
     maxPoolingTimout?: number | (() => number),
-  ) => Value extends UseSpec<FlowSpec.All | FlowSpec.Loop> | StreamLike<any>
-    ? IPromise<unknown[]>
-    : IPromise<unknown>;
+  ) => Value extends UseSpec<FlowSpec.All | FlowSpec.Loop> | IStreamLike<any>
+    ? IPromise<any[]>
+    : IPromise<any>;
 
-  stream: <Value extends IFlowToolkitStreamingValue, Output = unknown>(
+  stream: <Value extends IFlowSpecStreamLike, Output = any>(
     value: Value,
   ) => AsyncIterable<Output>;
 
-  toArray: <
-    Value extends IFlowToolkitStreamingValue | unknown,
-    Output = unknown,
-  >(
+  toArray: <Value extends IFlowSpecStreamLike | any, Output = any>(
     value: Value,
   ) => IPromise<Output[]>;
 
@@ -223,7 +233,7 @@ export type IFlowToolkit = {
 
   get: <
     Subject extends UseSpec<FlowSpec.State | FlowSpec.Entity>,
-    Output = unknown,
+    Output = any,
   >(
     value: Subject,
   ) => Promise<
@@ -232,24 +242,24 @@ export type IFlowToolkit = {
 
   set: <
     Subject extends UseSpec<FlowSpec.State | FlowSpec.Entity>,
-    Payload = unknown,
+    Payload = any,
   >(
     subject: Subject,
     payload: Payload,
-  ) => Promise<unknown>;
+  ) => Promise<any>;
 
-  del: (value: UseSpec<FlowSpec.State> | string) => Promise<unknown>;
+  del: (value: UseSpec<FlowSpec.State> | string) => Promise<any>;
 };
 
 type IFlowAwaitable = UseSpec<FlowSpec.Request | FlowSpec.Value | FlowSpec.All>;
 
-type IHandlerAsFunction<Input = unknown> = (
+type IHandlerAsFunction<Input = any> = (
   input: Input,
   toolkit: IFlowToolkit,
 ) => IPromise<undefined | void | IFlowAwaitable>;
 
 // output of this function is what will be the result of the requested command/query
-type IResolutionFunction<Input = unknown, Output = unknown> = (
+type IResolutionFunction<Input = any, Output = any> = (
   input: Input,
   toolkit: IFlowToolkit,
 ) => IPromise<Output>;
@@ -287,12 +297,12 @@ export type IFlowSpecEntity<EntityType = any> = IType<
   }
 >;
 
-export type IFlowSpecDataType<Type = unknown> = IType<{
+export type IFlowSpecDataType<Type = any> = IType<{
   type: FlowSpec.DataType;
   dataType: Type;
 }>;
 
-export type IFlowSpecValue<Value = unknown> = IType<{
+export type IFlowSpecValue<Value = any> = IType<{
   type: FlowSpec.Value;
   value: Value | Promise<Value>;
 }>;

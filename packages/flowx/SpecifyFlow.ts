@@ -7,6 +7,7 @@ import {
   IFlowSpecState,
   UseSpec,
 } from './index';
+import { an } from 'vitest/dist/chunks/reporters.66aFHiyX';
 
 type IWhenOutput = Readonly<{
   then: (input: UseSpec<FlowSpec.Then>['handler']) => IWhenOutput;
@@ -28,13 +29,13 @@ export type ISpecifyFlowLanguage = {
     title?: string,
   ) => UseSpec<FlowSpec.Query> & ISpecifyFlowMeta; // query
 
-  state: <Type = unknown>(
+  state: <Type = any>(
     name: string,
     title?: string,
     identity?: (entity: Type) => IPromise<string>,
   ) => IFlowSpecState<Type> & ISpecifyFlowMeta; // value
 
-  entity: <Type = unknown>(
+  entity: <Type = any>(
     name: string,
     title?: string,
     identity?: (entity: Type) => IPromise<string>,

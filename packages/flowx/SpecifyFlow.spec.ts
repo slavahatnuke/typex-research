@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { SpecifyFlow } from './SpecifyFlow';
-import { StreamX } from '@slavax/streamx';
-
 
 describe(SpecifyFlow.name, () => {
   it('should return an array of commands, queries, events, and whens', () => {
@@ -324,9 +322,7 @@ describe(SpecifyFlow.name, () => {
           .then(
             resolve(createUser, async (userStream, { toArray }) => {
               // output of ALL: is always stream of results
-              const [user1, user2] = await toArray(
-                userStream as StreamX<unknown>,
-              );
+              const [user1, user2] = await toArray(userStream);
               return user1;
             }),
           );
